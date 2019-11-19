@@ -1,11 +1,31 @@
-var utils  = require("./utils.js");
-var config = require("./config.js");
+/*
 
-var UR = utils.UR;
+   american fuzzy lop++ - frida agent instrumentation
+   --------------------------------------------------
+
+   Written and maintained by Andrea Fioraldi <andreafioraldi@gmail.com>
+
+   Copyright 2019 AFLplusplus Project. All rights reserved.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at:
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ */
+
+var config = require("./config.js");
 
 var interesting_8  = config.INTERESTING_8;
 var interesting_16 = interesting_8.concat(config.INTERESTING_16);
 var interesting_32 = interesting_16.concat(config.INTERESTING_32);
+
+function UR(n) {
+
+  return Math.floor(Math.random() * n);
+
+}
 
 function choose_block_len(limit) {
 
