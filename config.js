@@ -15,7 +15,8 @@
 
  */
 
-exports.MAP_SIZE = 65536;
+//exports.MAP_SIZE = 65536; // 2^16, AFL default
+exports.MAP_SIZE = 16384; // 2^14, small APIs doesn't require a large map
 
 exports.MAX_FILE = 1024;
 

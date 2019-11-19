@@ -3,12 +3,13 @@ import base64
 import time
 import os
 import sys
+import time
 
 output_folder = sys.argv[1]
 if not os.path.exists(output_folder):
     os.mkdir(output_folder)
 
-cmd = sys.argv[2:]
+pid = int(sys.argv[2])
 
 class QEntry(object):
     def __init__(self):
@@ -59,16 +60,18 @@ class Queue(object):
         return self.cur
 
 queue = Queue()
+start_time = 0
 
 def status_screen(status):
     global queue
+    t = time.time()
     print (chr(27) + "[2j") # clear
     print ('\033c')
     print ("\x1bc")
     print (" |=------------=[ frida-fuzz ]=------------|")
     print ("   output folder    :", output_folder)
     print ("   total executions :", status["total_execs"])
-    print ("   execution speed  : %d/sec" % status["exec_speed"])
+    print ("   execution speed  : %d/sec" % (status["total_execs"] / (t - start_time)))
     print ("   current testcase :", "<init>" if queue.cur is None else os.path.basename(queue.cur.filename))
     print ("   queue size       :", queue.size)
     print ("   last stage       :", status["stage"])
@@ -77,7 +80,6 @@ def status_screen(status):
 with open("frida-fuzz-agent.js") as f:
     code = f.read()
 
-pid = frida.spawn(cmd)
 session = frida.attach(pid)
 session.enable_jit()
 
@@ -142,5 +144,6 @@ script.on('message', on_message)
 
 script.load()
 
+start_time = int(time.time())
 script.exports.loop()
 
