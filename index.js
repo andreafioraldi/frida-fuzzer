@@ -20,7 +20,7 @@ var config = require("./config.js");
 
 /************************** USER CONFIGURABLE BITS ***************************/
 
-var TARGET_MODULE = "test";
+var TARGET_MODULE = "libnative-lib.so";
 var TARGET_FUNCTION = DebugSymbol.fromName("target_func").address;
 var RET_TYPE = "void";
 var ARGS_TYPES = ['pointer', 'int'];
@@ -34,6 +34,7 @@ function fuzzer_test_one_input (arr_buf) {
 
   // Memory.writeByteArray(payload_memory, zeroed_bytes);
   Memory.writeByteArray(payload_memory, b);
+  
   func_handle (payload_memory, b.length);
 
 }
@@ -76,12 +77,13 @@ maps.forEach(function(m) {
 
 });
 
+/*
 Process.setExceptionHandler(function (details) {
 
   send({"event": "crash", "details": details});
   return false; // Let the app crash
 
-});
+});*/
 
 var prev_loc_ptr = Memory.alloc(32);
 var prev_loc = 0;
@@ -221,7 +223,6 @@ rpc.exports.loop = function () {
       "event": "next",
       "stage": fuzz.stage_name,
       "total_execs": fuzz.total_execs,
-      "exec_speed": fuzz.exec_speed
     });
 
     var buf = undefined;

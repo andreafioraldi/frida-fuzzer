@@ -147,17 +147,16 @@ function save_if_interesting (buf, exec_us) {
   
   var hnb = has_new_bits(exports.trace_bits, exports.virgin_bits);
   if (hnb == 0)
-    return;
+    return true;
   
-  console.log("saving")
   send({
     "event": "interesting",
     "exec_us": exec_us,
     "new_cov": (hnb == 2),
     "stage": exports.stage_name,
     "total_execs": exports.total_execs,
-    "exec_speed": exports.exec_speed
   }, buf);
+  return false;  
   
 }
 
@@ -167,7 +166,18 @@ function common_fuzz_stuff(buf, callback) {
   Memory.writeByteArray(exports.trace_bits, zeroed_bits);
 
   var ts = (new Date()).getTime();
-  callback(buf);
+
+  try {
+    callback(buf);
+  } catch (err) {
+    send({
+      "event": "crash",
+      "err": err,
+      "stage": exports.stage_name
+    }, buf);
+    throw err;
+  }
+
   var exec_us = (new Date()).getTime() - ts;
   
   classify_counts(exports.trace_bits, count_class_lookup16_ptr);
@@ -175,7 +185,16 @@ function common_fuzz_stuff(buf, callback) {
   exports.exec_speed = exec_us;
   ++exports.total_execs;
   
-  save_if_interesting(buf, exec_us);
+  if (save_if_interesting(buf, exec_us)) {
+  
+    if (exports.total_execs & 0xff == 0)
+      send({
+        "event": "status",
+        "stage": exports.stage_name,
+        "total_execs": exports.total_execs,
+      });
+      
+  }
   
 }
 
