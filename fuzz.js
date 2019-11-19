@@ -187,7 +187,7 @@ function common_fuzz_stuff(buf, callback) {
   
   if (save_if_interesting(buf, exec_us)) {
   
-    if (exports.total_execs & 0xff == 0)
+    if (exports.total_execs & 0xfff == 0)
       send({
         "event": "status",
         "stage": exports.stage_name,

@@ -79,7 +79,7 @@ def status_screen(status):
     TERM_CLEAR = TERM_HOME + "\x1b[2J"
     print (TERM_CLEAR)
     print (" |=------------=[ frida-fuzz ]=------------|")
-    print ("   target PID       :", pid)
+    print ("   target app       :", pid)
     print ("   output folder    :", output_folder)
     print ("   uptime           :", readable_time(t - start_time))
     print ("   last path        :", readable_time(last_path - start_time))
@@ -159,7 +159,6 @@ def on_message(message, data):
         on_stats(msg, data)
 
 # init testcase
-queue.add(b"0000", 0, True, "init")
 
 script.on('message', on_message)
 
@@ -175,5 +174,9 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 start_time = int(time.time())
+
+last_path = start_time
+queue.add(b"0000", 0, True, "init")
+
 script.exports.loop()
 

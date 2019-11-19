@@ -20,8 +20,12 @@ var config = require("./config.js");
 
 /************************** USER CONFIGURABLE BITS ***************************/
 
+//var TARGET_MODULE = "test_linux64";
 var TARGET_MODULE = "libnative-lib.so";
-var TARGET_FUNCTION = DebugSymbol.fromName("target_func").address;
+Module.ensureInitialized(TARGET_MODULE);
+
+//var TARGET_FUNCTION = DebugSymbol.fromName("target_func").address;
+var TARGET_FUNCTION = Module.findExportByName(TARGET_MODULE, "target_func");
 var RET_TYPE = "void";
 var ARGS_TYPES = ['pointer', 'int'];
 
@@ -31,7 +35,7 @@ var payload_memory = Memory.alloc(config.MAX_FILE);
 function fuzzer_test_one_input (arr_buf) {
 
   var b = new Uint8Array(arr_buf);
-
+  
   // Memory.writeByteArray(payload_memory, zeroed_bytes);
   Memory.writeByteArray(payload_memory, b);
   
@@ -212,6 +216,7 @@ function hex_to_arrbuf(hexstr) {
 
 }
 
+fuzzer_test_one_input (new ArrayBuffer(8));
 
 rpc.exports.loop = function () {
 
