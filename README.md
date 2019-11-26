@@ -59,3 +59,5 @@ Both interesting testcases and crashes are saved into output_folder.
 
 Enjoy.
 
+![screen1](assets/screen1.png)
+
