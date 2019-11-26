@@ -95,6 +95,7 @@ with open("frida-fuzz-agent.js") as f:
 
 device = frida.get_usb_device()
 session = device.attach(pid)
+#session = frida.attach(pid)
 session.enable_jit()
 
 script = session.create_script(code)
@@ -145,7 +146,9 @@ def on_message(message, data):
         print ("  JS stacktrace:\n")
         print (message["stack"])
         print ("")
-        exit (1)
+        print (" >> Press Control-C to exit...")
+        script.unload()
+        session.detach()
     msg = message["payload"]
     if msg["event"] == "interesting":
         on_interesting(msg, data)
@@ -158,8 +161,6 @@ def on_message(message, data):
     elif msg["event"] == "stats":
         on_stats(msg, data)
 
-# init testcase
-
 script.on('message', on_message)
 
 script.load()
@@ -170,7 +171,7 @@ def signal_handler(sig, frame):
         script.unload()
         session.detach()
     except: pass
-    exit (0)
+    os._exit (0)
 signal.signal(signal.SIGINT, signal_handler)
 
 start_time = int(time.time())
@@ -178,5 +179,9 @@ start_time = int(time.time())
 last_path = start_time
 queue.add(b"0000", 0, True, "init")
 
-script.exports.loop()
+try:
+    script.exports.loop()
+except frida.InvalidOperationError as e:
+    print (e)
+    exit (1)
 
