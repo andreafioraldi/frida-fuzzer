@@ -40,10 +40,8 @@ Stalker.queueDrainInterval = STALKER_QUEUE_DRAIN_INT;
 
 rpc.exports.loop = function () {
 
-  function body () {
+  exports.fuzzing_loop = function () {
   
-    exports.init_function();
-
     if (exports.fuzzer_test_one_input === null) {
       throw "ERROR: fuzzer_test_one_input not set! Cannot start the fuzzing loop!";
     }
@@ -256,6 +254,12 @@ rpc.exports.loop = function () {
 
     }
 
+  }
+  
+  function body() {
+  
+    if (!exports.init_function()) exports.fuzzing_loop();
+  
   }
   
   if (exports.use_java) {

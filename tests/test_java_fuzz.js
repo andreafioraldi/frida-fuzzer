@@ -4,17 +4,27 @@ fuzz.use_java = true;
 fuzz.init_function = function () {
 
   var MainActivity = Java.use('com.example.ndktest1.MainActivity');
-  var JString = Java.use('java.lang.String');
   
-  fuzz.target_function = Module.findExportByName(fuzz.target_module, "target_func");
+  MainActivity.sendMessage.implementation = function () {
+  
+    var activity = this;
+    var JString = Java.use('java.lang.String');
+  
+    fuzz.target_module = Process.findModuleByAddress(activity.test_java_func.handle);
 
-  fuzz.fuzzer_test_one_input = function (payload, size) {
+    fuzz.fuzzer_test_one_input = function (payload, size) {
 
-    var str = JString.$new(Java.array('byte', payload.readByteArray(size)));
+      var str = JString.$new(Java.array('byte', payload.readByteArray(size)));
 
-    fuzz.target_function(str);
+      activity.test_java_func(str);
 
+    }
+
+    fuzz.fuzzing_loop();
+  
   }
+
+  return true;
 
 };
 
