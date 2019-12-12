@@ -38,17 +38,18 @@ fuzz.fuzzer_test_one_input = function (payload, size) {
 }
 ```
 
-`fuzz.fuzzer_test_one_input` is mandatory. I fyou don't specify `fuzz.target_module`, all the code executed will be instrumented.
+`fuzz.fuzzer_test_one_input` is mandatory. If you don't specify `fuzz.target_module`, all the code executed will be instrumented.
 
 You can also set `fuzz.init_function` to a callback that will be called at the beginning of the fuzzing loop.
 
 `fuzzer.py` accepts the following arguments:
 
+ | --------------- | --------------------------------------------------- |
  | -i I            | Folder with initial seeds                           |
  | -o O            | Output folder with intermediate seeds and crashes   |
  | -U              | Connect to USB                                      |
  | -script SCRIPT  | Script filename (default is fuzzer-agent.js)        |
-
+ | --------------- | --------------------------------------------------- |
 
 ## Example
 
