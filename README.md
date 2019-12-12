@@ -1,8 +1,8 @@
 # Frida API Fuzzer
 
-*** WARNING: you need the lastest Frida compiled from git (not the PyPI version) to have this working. Thanks Ole for the fixes on the Stalker. ***
-
-*** You can also wait for the next Frida release, it will happen ASAP, stay tuned! ***
+### WARNING: you need the lastest Frida compiled from git (not the PyPI version) to have this working.
+### Thanks Ole for the fixes on the Stalker.
+### You can also wait for the next Frida release, it will happen ASAP, stay tuned!
 
 This experimetal fuzzer is meant to be used for API in-memory fuzzing.
 
