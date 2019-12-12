@@ -110,6 +110,7 @@ Enjoy.
 
 Hey OSS community, there are a lot of TODOs if someone wants to contribute.
 
++ Java code fuzzing (should be easy, almost done)
 + splice stage (merge two testcase in queue and aplly havoc on it)
 + seed selection (explore schedule of AFL)
 + structural mutator (mutate bytes based on a grammar written in JSON)
