@@ -1,11 +1,12 @@
 /*
 
-   american fuzzy lop++ - frida agent instrumentation
-   --------------------------------------------------
+   frida-fuzzer - frida agent instrumentation
+   ------------------------------------------
 
    Written and maintained by Andrea Fioraldi <andreafioraldi@gmail.com>
+   Based on American Fuzzy Lop by Michal Zalewski
 
-   Copyright 2019 AFLplusplus Project. All rights reserved.
+   Copyright 2019 Andrea Fioraldi. All rights reserved.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -170,11 +171,14 @@ function common_fuzz_stuff(buf, callback) {
   try {
     callback(buf);
   } catch (err) {
-    send({
-      "event": "crash",
-      "err": err,
-      "stage": exports.stage_name
-    }, buf);
+    //console.log(err.stack)
+    if (err.type !== undefined) {
+      send({
+        "event": "crash",
+        "err": err,
+        "stage": exports.stage_name
+      }, buf);
+    }
     throw err;
   }
 

@@ -1,3 +1,22 @@
+#!/usr/bin/env python3
+"""
+
+   frida-fuzzer - fuzzer driver
+   ----------------------------
+
+   Written and maintained by Andrea Fioraldi <andreafioraldi@gmail.com>
+   Based on American Fuzzy Lop by Michal Zalewski
+
+   Copyright 2019 Andrea Fioraldi. All rights reserved.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at:
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+"""
+
 import frida
 import base64
 import time
@@ -5,14 +24,65 @@ import os
 import sys
 import time
 import signal
+import argparse
+import tempfile
+import random
 
-output_folder = sys.argv[1]
-if not os.path.exists(output_folder):
+UNINFORMED_SEED = b"\x00\x00\x00\x00\x00\x00\x00\x00"
+
+DESCR = """Frida Android API Fuzzer
+Copyright (C) 2019 Andrea Fioraldi <andreafioraldi@gmail.com>
+"""
+
+opt = argparse.ArgumentParser(description=DESCR, formatter_class=argparse.RawTextHelpFormatter)
+opt.add_argument("app_name", action="store")
+opt.add_argument("-i", action="store", help="Folder with initial seeds")
+opt.add_argument("-o", action="store", help="Output folder with intermediate seeds and crashes")
+opt.add_argument("-U", action="store_true", help="Connect to USB")
+opt.add_argument("-script", action="store", default="fuzzer-agent.js", help="Script filename (default is fuzzer-agent.js)")
+
+args = opt.parse_args()
+if args.o is None:
+    output_folder = tempfile.mkdtemp(prefix="frida_fuzz_out_")
+    print (" >> Temporary output folder :", output_folder)
+else:
+    output_folder = args.o
+    if os.path.exists(output_folder):
+        print (" >> %s already exists!" % output_folder)
+        exit (1)
     os.mkdir(output_folder)
 
-pid = (sys.argv[2])
+if args.i and not os.path.exists(args.i):
+    print (" >> %s doesn't exists!")
+    exit (1)
 
-mypid = os.getpid()
+app_name = args.app_name
+try:
+    app_name = int(app_name)
+except:
+    pass # not a PID
+
+with open(args.script) as f:
+    code = f.read()
+
+if args.U:
+    device = frida.get_usb_device()
+    session = device.attach(app_name)
+else:
+    session = frida.attach(app_name)
+
+session.enable_jit()
+
+script = session.create_script(code)
+
+def locate_diffs(a, b):
+    f_loc = None
+    l_loc = None
+    for i in xrange(min(len(a), len(b))):
+        if a[i] != b[i]:
+            if f_loc is None: f_loc = i
+            l_loc = i
+    return f_loc, l_loc
 
 class QEntry(object):
     def __init__(self):
@@ -61,6 +131,25 @@ class Queue(object):
             q = self.cur.next
             self.cur = q
         return self.cur
+    
+    def find_by_num(self, num):
+        q = self.start
+        while q is not None:
+            if q.num == num:
+                return q
+            q = q.next
+        return None
+    
+    def get_splice_target(self, q, buf):
+        tid = random.randint(0, self.size -1)
+        t = self.find_by_num(tid)
+        while t is not None and (t.size < 2 or t.num == q.num):
+            t = t.next
+        if t is None:
+            return None
+        with open(t.filename) as f:
+            new_buf = f.read()
+        
 
 queue = Queue()
 start_time = 0
@@ -73,13 +162,19 @@ def readable_time(t):
     return "%dh-%dm-%ds" % (h, m, s)
 
 def status_screen(status):
-    global queue, pid
+    global queue, app_name
+    #return
     t = time.time()
     TERM_HOME = "\x1b[H"
     TERM_CLEAR = TERM_HOME + "\x1b[2J"
+    FUZZER_NAME = "frida-fuzzer"
+    bl = max(len(str(app_name)), len(output_folder), 20)
+    bl = len("target app       : ") + bl - len("=[ %s ]=" % FUZZER_NAME)
+    bl = bl // 2 if bl % 2 == 0 else (bl +1) // 2
+    sb = " |=" + "-"*bl + ("=[ %s ]=" % FUZZER_NAME) + "-"*bl + "=|"
     print (TERM_CLEAR)
-    print (" |=------------=[ frida-fuzz ]=------------|")
-    print ("   target app       :", pid)
+    print (sb)
+    print ("   target app       :", app_name)
     print ("   output folder    :", output_folder)
     print ("   uptime           :", readable_time(t - start_time))
     print ("   last path        :", readable_time(last_path - start_time))
@@ -88,17 +183,8 @@ def status_screen(status):
     print ("   current testcase :", "<init>" if queue.cur is None else os.path.basename(queue.cur.filename))
     print ("   total executions :", status["total_execs"])
     print ("   execution speed  : %d/sec" % (status["total_execs"] / (t - start_time)))
-    print (" |=----------------------------------------|\n")
+    print (" |=" + "-"*(len(sb) -5) + "=|\n")
 
-with open("frida-fuzz-agent.js") as f:
-    code = f.read()
-
-device = frida.get_usb_device()
-session = device.attach(pid)
-#session = frida.attach(pid)
-session.enable_jit()
-
-script = session.create_script(code)
 
 def on_interesting(message, data):
     global queue, last_path
@@ -115,13 +201,20 @@ def on_next(message, data):
         buf = f.read()
     script.post({
       "type": "input",
+      "num": q.num,
       "buf": buf.hex(),
       "was_fuzzed": q.was_fuzzed,
     })
 
+def on_splice(message, data):
+    global queue
+    num = message["num"]
+    q = queue.find_by_num(num)
+    
+
 def on_crash(message, data):
     global queue, script, session
-    print ("\n"*2 + " ************** CRASH FOUND! **************")
+    print ("\n"*2 + "  ************** CRASH FOUND! **************")
     print ("    type:", message["err"]["type"])
     if "memory" in message["err"]:
         print ("    %s at:" % message["err"]["memory"]["operation"], message["err"]["memory"]["address"])
@@ -162,7 +255,6 @@ def on_message(message, data):
         on_stats(msg, data)
 
 script.on('message', on_message)
-
 script.load()
 
 def signal_handler(sig, frame):
@@ -177,11 +269,21 @@ signal.signal(signal.SIGINT, signal_handler)
 start_time = int(time.time())
 
 last_path = start_time
-queue.add(b"0000", 0, True, "init")
+
+if args.i is None:
+    queue.add(UNINFORMED_SEED, 0, True, "init")
+else:
+    for fname in os.listdir(args.i):
+        p = os.path.join(args.i, fname)
+        if not os.path.isfile(p): continue
+        with open(p, "rb") as f:
+            queue.add(f.read(), 0, True, "init")
 
 try:
     script.exports.loop()
 except frida.InvalidOperationError as e:
     print (e)
     exit (1)
+
+sys.stdin.read()
 

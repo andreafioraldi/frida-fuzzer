@@ -1,6 +1,10 @@
-# Frida/QBDI Android API Fuzzer
+# Frida API Fuzzer
 
-This experimetal fuzzer is meant to be used for API in-memory fuzzing on Android.
+### WARNING: you need the lastest Frida compiled from git (not the PyPI version) to have this working.
+### Thanks Ole for the fixes on the Stalker.
+### You can also wait for the next Frida release, it will happen ASAP, stay tuned!
+
+This experimetal fuzzer is meant to be used for API in-memory fuzzing.
 
 The desing is highly inspired and based on AFL/AFL++.
 
@@ -9,33 +13,78 @@ is simply FIFO (no favored paths, no trimming, no extra features).
 Obviously these features are planned, if you want to contribute adding them PR
 are well accepted.
 
-ATM I tested only on the two examples under tests/, this is a very WIP project.
+I tested only on the two examples under tests/, this is a WIP project but is know to works at least on GNU/Linux x86_64 and Android x86_64.
 
-## How to
+## Usage
 
-This fuzzer is known to work in the Android Emulator (tested on x86_64) but should work on any rooted x86 Android device in theory.
+The `fuzz` library has to be imported into a custom harness and then compiled with `frida-compile` to generate the agent that `fuzzer.py` will inject into the target app.
 
-Firstly, download the Android x86_64 build of QBDI and extract the archive in a subdirectory of this project named `QBDI`.
+The majority of the logic of the fuzzer is in the agent.
 
-Then install Frida on your host with `pip3 install frida`.
+An harness has the following format:
 
-Make sure to have the root shell and SELinux disabled on your virtual device:
+```js
+var fuzz = require("./fuzz");
+
+var TARGET_MODULE = "libnative-lib.so";
+var TARGET_FUNCTION = Module.findExportByName(TARGET_MODULE, "target_func");
+var RET_TYPE = "void";
+var ARGS_TYPES = ['pointer', 'int'];
+
+var func_handle = new NativeFunction(TARGET_FUNCTION, RET_TYPE, ARGS_TYPES, { traps: 'all' });
+
+fuzz.target_module = TARGET_MODULE;
+
+fuzz.fuzzer_test_one_input = function (payload, size) {
+
+  func_handle(payload, size);
+
+}
+```
+
+`fuzz.fuzzer_test_one_input` is mandatory. If you don't specify `fuzz.target_module`, all the code executed will be instrumented.
+
+You can also set `fuzz.init_function` to a callback that will be called at the beginning of the fuzzing loop.
+
+`fuzzer.py` accepts the following arguments:
+
+<table>
+    <tr>
+        <td>-i FOLDER</td>
+        <td>Folder with initial seeds</td>
+    </tr>
+    <tr>
+        <td>-o FOLDER</td>
+        <td>Output folder with intermediate seeds and crashes</td>
+    </tr>
+    <tr>
+        <td>-U</td>
+        <td>Connect to USB</td>
+    </tr>
+    <tr>
+        <td>-script SCRIPT</td>
+        <td>Script filename (default is fuzzer-agent.js)</td>
+    </tr>
+</table>
+
+## Example
+
+Firstly, install Frida on your host with `pip3 install frida` (it will be this, for now compile it from master).
+
+Make sure to have root on your virtual device:
 
 ```
 host$ adb root
-host$ adb shell setenforce 0
 ```
 
 Download the Android x86_64 frida-server from the repo release page and copy it
 on the device under /data/local/tmp (use adb push).
 
-Copy libQBDI.so always in /data/local/tmp.
-
 Start a shell and run the frida-server:
 
 ```
 device# cd /data/local/tmp
-device# ./frida-server-12.7.22-android-x86_64
+device# ./frida-server
 ```
 
 Now install the test app tests/app-debug.apk using the drag & drop into the emulator window.
@@ -45,14 +94,14 @@ Then, open the app.
 Compile the agent script wiht frida-compile:
 
 ```
-host$ frida-compile -x index.js -o frida-fuzz-agent.js
+host$ frida-compile -x tests/test_ndk_x64.js -o fuzzer-agent.js
 ```
 
 Fuzz the `test_func` function of the libnative-lib.so library shipped with the test app
 with the command:
 
 ```
-host$ python3 fuzz.py output_folder/ com.example.ndktest1
+host$ ./fuzzer.py -o output_folder/ com.example.ndktest1
 ```
 
 Both interesting testcases and crashes are saved into output_folder.
@@ -60,4 +109,18 @@ Both interesting testcases and crashes are saved into output_folder.
 Enjoy.
 
 ![screen1](assets/screen1.png)
+
+## TODO
+
+Hey OSS community, there are a lot of TODOs if someone wants to contribute.
+
++ Java code fuzzing (should be easy, almost done)
++ splice stage (merge two testcase in queue and aplly havoc on it)
++ seed selection (explore schedule of AFL)
++ structural mutator (mutate bytes based on a grammar written in JSON)
++ CompareCoverage (sub-instrumentation profiling to bypass fuzzing roadblocks)
+
+If you have doubt on one of this featues feel free to DM me on [Twitter](https://twitter.com/andreafioraldi).
+
+For features proposals, there is the [Issues section](https://github.com/andreafioraldi/frida-fuzzer/issues).
 
