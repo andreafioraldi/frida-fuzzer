@@ -46,11 +46,11 @@ You can also set `fuzz.init_function` to a callback that will be called at the b
 
 <table>
     <tr>
-        <td>-i I</td>
+        <td>-i FOLDER</td>
         <td>Folder with initial seeds</td>
     </tr>
     <tr>
-        <td>-o O</td>
+        <td>-o FOLDER</td>
         <td>Output folder with intermediate seeds and crashes</td>
     </tr>
     <tr>
