@@ -44,12 +44,24 @@ You can also set `fuzz.init_function` to a callback that will be called at the b
 
 `fuzzer.py` accepts the following arguments:
 
- | --------------- | --------------------------------------------------- |
- | -i I            | Folder with initial seeds                           |
- | -o O            | Output folder with intermediate seeds and crashes   |
- | -U              | Connect to USB                                      |
- | -script SCRIPT  | Script filename (default is fuzzer-agent.js)        |
- | --------------- | --------------------------------------------------- |
+<table>
+    <tr>
+        <td>-i I</td>
+        <td>Folder with initial seeds</td>
+    </tr>
+    <tr>
+        <td>-o O</td>
+        <td>Output folder with intermediate seeds and crashes</td>
+    </tr>
+    <tr>
+        <td>-U</td>
+        <td>Connect to USB</td>
+    </tr>
+    <tr>
+        <td>-script SCRIPT</td>
+        <td>Script filename (default is fuzzer-agent.js)</td>
+    </tr>
+</table>
 
 ## Example
 
