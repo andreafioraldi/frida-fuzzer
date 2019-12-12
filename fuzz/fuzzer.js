@@ -170,11 +170,14 @@ function common_fuzz_stuff(buf, callback) {
   try {
     callback(buf);
   } catch (err) {
-    send({
-      "event": "crash",
-      "err": err,
-      "stage": exports.stage_name
-    }, buf);
+    //console.log(err.stack)
+    if (err.type !== undefined) {
+      send({
+        "event": "crash",
+        "err": err,
+        "stage": exports.stage_name
+      }, buf);
+    }
     throw err;
   }
 
