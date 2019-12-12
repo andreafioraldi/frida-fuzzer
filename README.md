@@ -35,7 +35,7 @@ var func_handle = new NativeFunction(TARGET_FUNCTION, RET_TYPE, ARGS_TYPES, { tr
 
 fuzz.target_module = TARGET_MODULE;
 
-fuzz.fuzzer_test_one_input = function (payload, size) {
+fuzz.fuzzer_test_one_input = function (/* NativePointer */ payload, size) {
 
   func_handle(payload, size);
 
@@ -70,7 +70,6 @@ You can also set `fuzz.init_function` to a callback that will be called at the b
 Running `fuzzer.py` you will see somthing like the following status screen on your terminal:
 
 ```
-
  |=---------------=[ frida-fuzzer ]=---------------=|
    target app       : 6103
    output folder    : /tmp/frida_fuzz_out_4ytgqst_
@@ -82,7 +81,6 @@ Running `fuzzer.py` you will see somthing like the following status screen on yo
    total executions : 87808
    execution speed  : 29242/sec
  |=------------------------------------------------=|
-
 ```
 
 ## Example
