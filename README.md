@@ -106,3 +106,16 @@ Enjoy.
 
 ![screen1](assets/screen1.png)
 
+## TODO
+
+Hey OSS community, there are a lot of TODOs if someone wants to contribute.
+
++ splice stage (merge two testcase in queue and aplly havoc on it)
++ seed selection (explore schedule of AFL)
++ structural mutator (mutate bytes based on a grammar written in JSON)
++ CompareCoverage (sub-instrumentation profiling to bypass fuzzing roadblocks)
+
+If you have doubt on one of this featues feel free to DM me on [Twitter](https://twitter.com/andreafioraldi).
+
+For features proposals, there is the [Issues section](https://github.com/andreafioraldi/frida-fuzzer/issues).
+
