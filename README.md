@@ -1,5 +1,7 @@
 # Frida API Fuzzer
 
+*** WARNING: you need the lastest Frida compiled from git (not the PyPI version) to have this working ***
+
 This experimetal fuzzer is meant to be used for API in-memory fuzzing.
 
 The desing is highly inspired and based on AFL/AFL++.
@@ -65,7 +67,7 @@ You can also set `fuzz.init_function` to a callback that will be called at the b
 
 ## Example
 
-Firstly, install Frida on your host with `pip3 install frida`.
+Firstly, install Frida on your host with `pip3 install frida` (it will be this, for now compile it from master).
 
 Make sure to have root on your virtual device:
 
