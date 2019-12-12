@@ -26,8 +26,8 @@ An harness has the following format:
 ```js
 var fuzz = require("./fuzz");
 
-var TARGET_MODULE = "libnative-lib.so";
-var TARGET_FUNCTION = Module.findExportByName(TARGET_MODULE, "target_func");
+var TARGET_MODULE = "test_linux64";
+var TARGET_FUNCTION = DebugSymbol.fromName("target_func").address;;
 var RET_TYPE = "void";
 var ARGS_TYPES = ['pointer', 'int'];
 
@@ -66,6 +66,24 @@ You can also set `fuzz.init_function` to a callback that will be called at the b
         <td>Script filename (default is fuzzer-agent.js)</td>
     </tr>
 </table>
+
+Running `fuzzer.py` you will see somthing like the following status screen on your terminal:
+
+```
+
+ |=---------------=[ frida-fuzzer ]=---------------=|
+   target app       : 6103
+   output folder    : /tmp/frida_fuzz_out_4ytgqst_
+   uptime           : 0h-0m-3s
+   last path        : 0h-0m-0s
+   queue size       : 8
+   last stage       : havoc
+   current testcase : id_7_havoc_cov
+   total executions : 87808
+   execution speed  : 29242/sec
+ |=------------------------------------------------=|
+
+```
 
 ## Example
 
