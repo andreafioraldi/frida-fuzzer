@@ -9,9 +9,48 @@ is simply FIFO (no favored paths, no trimming, no extra features).
 Obviously these features are planned, if you want to contribute adding them PR
 are well accepted.
 
-I tested only on the two examples under tests/, this is a very WIP project but is know to works at least on GNU/Linux x86_64 and Android x86_64.
+I tested only on the two examples under tests/, this is a WIP project but is know to works at least on GNU/Linux x86_64 and Android x86_64.
 
-## How to
+## Usage
+
+The `fuzz` library has to be imported into a custom harness and then compiled with `frida-compile` to generate the agent that `fuzzer.py` will inject into the target app.
+
+The majority of the logic of the fuzzer is in the agent.
+
+An harness has the following format:
+
+```js
+var fuzz = require("./fuzz");
+
+var TARGET_MODULE = "libnative-lib.so";
+var TARGET_FUNCTION = Module.findExportByName(TARGET_MODULE, "target_func");
+var RET_TYPE = "void";
+var ARGS_TYPES = ['pointer', 'int'];
+
+var func_handle = new NativeFunction(TARGET_FUNCTION, RET_TYPE, ARGS_TYPES, { traps: 'all' });
+
+fuzz.target_module = TARGET_MODULE;
+
+fuzz.fuzzer_test_one_input = function (payload, size) {
+
+  func_handle(payload, size);
+
+}
+```
+
+`fuzz.fuzzer_test_one_input` is mandatory. I fyou don't specify `fuzz.target_module`, all the code executed will be instrumented.
+
+You can also set `fuzz.init_function` to a callback that will be called at the beginning of the fuzzing loop.
+
+`fuzzer.py` accepts the following arguments:
+
+ | -i I            | Folder with initial seeds                           |
+ | -o O            | Output folder with intermediate seeds and crashes   |
+ | -U              | Connect to USB                                      |
+ | -script SCRIPT  | Script filename (default is fuzzer-agent.js)        |
+
+
+## Example
 
 Firstly, install Frida on your host with `pip3 install frida`.
 
