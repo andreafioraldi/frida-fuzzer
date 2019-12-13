@@ -199,7 +199,7 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
   
   if (save_if_interesting(buf, exec_us)) {
   
-    if (exports.total_execs & 0x3fff == 0)
+    if (exports.total_execs & 0xfff == 0)
       send({
         "event": "status",
         "stage": exports.stage_name,
