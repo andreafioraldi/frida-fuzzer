@@ -19,6 +19,7 @@
 var fuzzer = require("./fuzzer.js");
 var config = require("./config.js");
 var mutator = require("./mutator.js");
+var utils = require("./utils.js");
 
 exports.fuzzer = fuzzer;
 exports.config = config;
@@ -28,6 +29,12 @@ exports.target_module = null;
 exports.fuzzer_test_one_input = null;
 exports.use_java = false;
 exports.init_function = function () {};
+
+// by dfault stages are like FidgetyAFL
+exports.stages = [
+  fuzzer.havoc_stage,
+  fuzzer.splice_stage,
+];
 
 // Stalker tuning
 var STALKER_QUEUE_CAP = 100000000;
@@ -216,17 +223,6 @@ rpc.exports.loop = function () {
       return false;
     });
 
-    function hex_to_arrbuf(hexstr) {
-
-      var buf = [];
-      for(var i = 0; i < hexstr.length; i+=2)
-          buf.push(parseInt(hexstr.substring(i, i + 2), 16));
-
-      buf = new Uint8Array(buf);
-      return buf.buffer;
-
-    }
-
     console.log(" >> Starting fuzzing loop...");
     
     while (true) {
@@ -239,18 +235,15 @@ rpc.exports.loop = function () {
 
       var buf = undefined;
       var op = recv("input", function (val) {
-        buf = hex_to_arrbuf(val.buf);
+        buf = utils.hex_to_arrbuf(val.buf);
+        fuzzer.queue_cur = val.num;
         //val.was_fuzzed
       });
 
       op.wait();
 
-      try {
-        /* RANDOM HAVOC */
-        fuzzer.fuzz_havoc(buf, runner, false);
-      } catch(err) {
-        return;
-      }
+      for(var stage of exports.stages)
+          stage(buf, runner);
 
     }
 

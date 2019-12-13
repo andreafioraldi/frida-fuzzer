@@ -18,13 +18,19 @@
 
 var config  = require("./config.js");
 var mutator = require("./mutator.js");
+var utils = require("./utils.js");
 
 exports.stage_name = "init";
 exports.stage_cur  = 0;
 exports.stage_max  = 0;
 
+exports.splice_cycle = 0;
+
 exports.total_execs = 0;
 exports.exec_speed = 0;
+
+exports.queue_cur = -1;
+exports.queue_size = 0;
 
 exports.trace_bits  = Memory.alloc(config.MAP_SIZE);
 exports.virgin_bits = Memory.alloc(config.MAP_SIZE);
@@ -157,6 +163,8 @@ function save_if_interesting (buf, exec_us) {
     "stage": exports.stage_name,
     "total_execs": exports.total_execs,
   }, buf);
+  exports.queue_size++;
+
   return false;  
   
 }
@@ -191,7 +199,7 @@ function common_fuzz_stuff(buf, callback) {
   
   if (save_if_interesting(buf, exec_us)) {
   
-    if (exports.total_execs & 0xfff == 0)
+    if (exports.total_execs & 0x3fff == 0)
       send({
         "event": "status",
         "stage": exports.stage_name,
@@ -202,14 +210,14 @@ function common_fuzz_stuff(buf, callback) {
   
 }
 
-exports.fuzz_havoc = function (buf, callback, is_splice) {
+function fuzz_havoc(buf, callback, is_splice) {
 
   if (!is_splice)  {
     exports.stage_name = "havoc";
-    exports.stage_max = config.HAVOC_CYCLES; // TODO perf_score & co
+    exports.stage_max = config.HAVOC_CYCLES * 40; // TODO perf_score & co
   } else {
-    exports.stage_name = "splice";
-    exports.stage_max = config.SPLICE_CYCLES; // TODO perf_score & co
+    exports.stage_name = "splice " + exports.splice_cycle;
+    exports.stage_max = config.SPLICE_HAVOC * 40; // TODO perf_score & co
   }
 
   for (exports.stage_cur = 0; exports.stage_cur < exports.stage_max;
@@ -220,6 +228,46 @@ exports.fuzz_havoc = function (buf, callback, is_splice) {
     
     common_fuzz_stuff(muted, callback);
  
+  }
+
+}
+
+exports.havoc_stage = function (buf, callback) {
+
+  fuzz_havoc(buf, callback, false);
+
+}
+
+exports.splice_stage = function (buf, callback) {
+
+  exports.splice_cycle = 0;
+
+  if (buf.byteLength <= 1 || exports.queue_size <= 1) return;
+
+  while (exports.splice_cycle < config.SPLICE_CYCLES) {
+
+    send({
+      "event": "splice",
+      "num": exports.queue_cur,
+      "cycle": exports.splice_cycle,
+      "stage": exports.stage_name,
+      "total_execs": exports.total_execs,
+    });
+
+    var new_buf = undefined;
+    var op = recv("splice", function (val) {
+      if (val.buf !== null && val.buf !== undefined) {
+        new_buf = utils.hex_to_arrbuf(val.buf);
+        exports.splice_cycle = val.cycle;
+      }
+    });
+
+    op.wait();
+    
+    if (new_buf === undefined) break;
+
+    fuzz_havoc(new_buf, callback, true);
+    
   }
 
 }

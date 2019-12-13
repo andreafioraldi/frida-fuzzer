@@ -28,6 +28,8 @@ import argparse
 import tempfile
 import random
 
+SPLICE_CYCLES = 15 # warning: must be consistent wiht config.js! 
+
 UNINFORMED_SEED = b"\x00\x00\x00\x00\x00\x00\x00\x00"
 
 DESCR = """Frida Android API Fuzzer
@@ -78,7 +80,7 @@ script = session.create_script(code)
 def locate_diffs(a, b):
     f_loc = None
     l_loc = None
-    for i in xrange(min(len(a), len(b))):
+    for i in range(min(len(a), len(b))):
         if a[i] != b[i]:
             if f_loc is None: f_loc = i
             l_loc = i
@@ -147,8 +149,13 @@ class Queue(object):
             t = t.next
         if t is None:
             return None
-        with open(t.filename) as f:
+        with open(t.filename, "rb") as f:
             new_buf = f.read()
+        f_diff, l_diff = locate_diffs(buf, new_buf)
+        if f_diff is None or l_diff < 2 or f_diff == l_diff:
+            return None
+        split_at = random.randint(f_diff, l_diff -1)
+        return buf[:split_at] + new_buf[split_at:]
         
 
 queue = Queue()
@@ -209,8 +216,27 @@ def on_next(message, data):
 def on_splice(message, data):
     global queue
     num = message["num"]
+    splice_cycle = message["cycle"]
     q = queue.find_by_num(num)
-    
+    with open(q.filename, "rb") as f:
+        buf = f.read()
+    new_buf = None
+    while splice_cycle < SPLICE_CYCLES:
+        splice_cycle += 1
+        new_buf = queue.get_splice_target(q, buf)
+        if new_buf is not None:
+            break
+    if new_buf is None:
+        script.post({
+          "type": "splice",
+          "buf": None, # failed
+        })
+    else:
+        script.post({
+          "type": "splice",
+          "buf": new_buf.hex(),
+          "cycle": splice_cycle,
+        })
 
 def on_crash(message, data):
     global queue, script, session
@@ -248,6 +274,9 @@ def on_message(message, data):
         on_stats(msg, data)
     elif msg["event"] == "next":
         on_next(msg, data)
+        on_stats(msg, data)
+    elif msg["event"] == "splice":
+        on_splice(msg, data)
         on_stats(msg, data)
     elif msg["event"] == "crash":
         on_crash(msg, data)

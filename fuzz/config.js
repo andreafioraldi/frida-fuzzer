@@ -26,6 +26,8 @@ exports.HAVOC_STACK_POW2 = 7;
 exports.HAVOC_CYCLES = 256;
 exports.SPLICE_HAVOC = 32;
 
+exports.SPLICE_CYCLES = 15;
+
 exports.HAVOC_BLK_SMALL  = 32;
 exports.HAVOC_BLK_MEDIUM = 128;
 exports.HAVOC_BLK_LARGE  = 1500;

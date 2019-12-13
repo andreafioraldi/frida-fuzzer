@@ -83,6 +83,8 @@ Running `fuzzer.py` you will see somthing like the following status screen on yo
  |=------------------------------------------------=|
 ```
 
+You can also easily add a custom stage in `fuzz/fuzzer.js` and add it to the stages array in `fuzz/index.js`.
+
 ## Example
 
 Firstly, install Frida on your host with `pip3 install frida` (it will be this, for now compile it from master).
@@ -131,7 +133,7 @@ Enjoy.
 Hey OSS community, there are a lot of TODOs if someone wants to contribute.
 
 + Java code fuzzing (should be easy, almost done)
-+ splice stage (merge two testcase in queue and aplly havoc on it)
++ ~~splice stage (merge two testcase in queue and aplly havoc on it)~~
 + seed selection (explore schedule of AFL)
 + structural mutator (mutate bytes based on a grammar written in JSON)
 + CompareCoverage (sub-instrumentation profiling to bypass fuzzing roadblocks)
