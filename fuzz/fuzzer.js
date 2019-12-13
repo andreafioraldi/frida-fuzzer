@@ -170,7 +170,7 @@ function save_if_interesting (buf, exec_us) {
 }
 
 
-function common_fuzz_stuff(buf, callback) {
+function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
 
   Memory.writeByteArray(exports.trace_bits, zeroed_bits);
 
@@ -210,7 +210,7 @@ function common_fuzz_stuff(buf, callback) {
   
 }
 
-function fuzz_havoc(buf, callback, is_splice) {
+function fuzz_havoc(/* ArrayBuffer */ buf, callback, is_splice) {
 
   if (!is_splice)  {
     exports.stage_name = "havoc";
@@ -232,13 +232,13 @@ function fuzz_havoc(buf, callback, is_splice) {
 
 }
 
-exports.havoc_stage = function (buf, callback) {
+exports.havoc_stage = function (/* ArrayBuffer */ buf, callback) {
 
   fuzz_havoc(buf, callback, false);
 
 }
 
-exports.splice_stage = function (buf, callback) {
+exports.splice_stage = function (/* ArrayBuffer */ buf, callback) {
 
   exports.splice_cycle = 0;
 

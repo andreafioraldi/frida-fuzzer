@@ -1,16 +1,25 @@
 var fuzz = require("../fuzz");
 
-fuzz.use_java = true;
-fuzz.init_function = function () {
+// Start the fuzzing loop manually when Java is avaiable
+fuzz.manual_loop_start = true;
+
+Java.perform(function () {
+
+  console.log (" >> Java is ready!");
 
   var MainActivity = Java.use('com.example.ndktest1.MainActivity');
   
   MainActivity.sendMessage.implementation = function () {
   
+    console.log (" >> Button clicked!");
+  
     var activity = this;
     var JString = Java.use('java.lang.String');
   
+    // TODO this is broken, wait Ole for the next Frida release
     fuzz.target_module = Process.findModuleByAddress(activity.test_java_func.handle);
+    
+    // TODO recreate method with traps: all
 
     fuzz.fuzzer_test_one_input = function (payload, size) {
 
@@ -20,12 +29,12 @@ fuzz.init_function = function () {
 
     }
 
+    /* Manually start loop so that we ensure to call fuzzer_test_one_input
+       in the Java perform context */
     fuzz.fuzzing_loop();
   
   }
 
-  return true;
-
-};
+});
 
 console.log (" >> Agent loaded!");
