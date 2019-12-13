@@ -1,6 +1,6 @@
 # Frida API Fuzzer
 
-### WARNING: you need the lastest Frida compiled from git (not the PyPI version) to have this working.
+### WARNING: you need the lastest Frida compiled from git to have this working.
 ### Thanks Ole for the fixes on the Stalker.
 ### You can also wait for the next Frida release, it will happen ASAP, stay tuned!
 
@@ -8,7 +8,7 @@ This experimetal fuzzer is meant to be used for API in-memory fuzzing.
 
 The desing is highly inspired and based on AFL/AFL++.
 
-ATM the mutator is quite simple, just the AFL's havoc stage and the seed selection
+ATM the mutator is quite simple, just the AFL's havoc and splice stages and the seed selection
 is simply FIFO (no favored paths, no trimming, no extra features).
 Obviously these features are planned, if you want to contribute adding them PR
 are well accepted.
