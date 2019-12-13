@@ -132,9 +132,9 @@ Enjoy.
 
 Hey OSS community, there are a lot of TODOs if someone wants to contribute.
 
-+ Java code fuzzing (should be easy, almost done)
++ Java code fuzzing (waiting for additional exposed methods in frida-java-bridge, should be easy, almost done)
 + ~~splice stage (merge two testcase in queue and aplly havoc on it)~~
-+ seed selection (explore schedule of AFL)
++ seed selection and performance scoring (explore schedule of AFL)
 + structural mutator (mutate bytes based on a grammar written in JSON)
 + CompareCoverage (sub-instrumentation profiling to bypass fuzzing roadblocks)
 + rewrite fuzzer.py in C with frida-core to be able to run all the stuffs on the mobile device
