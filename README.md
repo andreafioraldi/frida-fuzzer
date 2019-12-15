@@ -134,6 +134,8 @@ Hey OSS community, there are a lot of TODOs if someone wants to contribute.
 
 + Java code fuzzing (waiting for additional exposed methods in frida-java-bridge, should be easy, almost done)
 + ~~splice stage (merge two testcase in queue and aplly havoc on it)~~
++ inlined istrumentation for x86, arm and arm64 (x86_64 is the only inlined atm)
++ support dictionaries (and so modify also havoc)
 + seed selection and performance scoring (explore schedule of AFL)
 + structural mutator (mutate bytes based on a grammar written in JSON)
 + CompareCoverage (sub-instruction profiling to bypass fuzzing roadblocks)
