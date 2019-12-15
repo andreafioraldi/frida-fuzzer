@@ -136,7 +136,7 @@ Hey OSS community, there are a lot of TODOs if someone wants to contribute.
 + ~~splice stage (merge two testcase in queue and aplly havoc on it)~~
 + seed selection and performance scoring (explore schedule of AFL)
 + structural mutator (mutate bytes based on a grammar written in JSON)
-+ CompareCoverage (sub-instrumentation profiling to bypass fuzzing roadblocks)
++ CompareCoverage (sub-instruction profiling to bypass fuzzing roadblocks)
 + rewrite fuzzer.py in C with frida-core to be able to run all the stuffs on the mobile device
 
 If you have doubt on one of this featues feel free to DM me on [Twitter](https://twitter.com/andreafioraldi).
