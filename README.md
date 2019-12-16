@@ -44,8 +44,6 @@ fuzz.fuzzer_test_one_input = function (/* NativePointer */ payload, size) {
 
 `fuzz.fuzzer_test_one_input` is mandatory. If you don't specify `fuzz.target_module`, all the code executed will be instrumented.
 
-You can also set `fuzz.init_function` to a callback that will be called at the beginning of the fuzzing loop.
-
 `fuzzer.py` accepts the following arguments:
 
 <table>
