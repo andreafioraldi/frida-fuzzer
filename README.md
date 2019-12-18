@@ -37,9 +37,13 @@ var func_handle = new NativeFunction(TARGET_FUNCTION, RET_TYPE, ARGS_TYPES, { tr
 
 fuzz.target_module = TARGET_MODULE;
 
-fuzz.fuzzer_test_one_input = function (/* NativePointer */ payload, size) {
+var payload_mem = Memory.alloc(fuzz.config.MAX_FILE);
 
-  func_handle(payload, size);
+fuzz.fuzzer_test_one_input = function (/* Uint8Array */ payload) {
+
+  Memory.writeByteArray(payload_mem, payload, payload.length);
+
+  func_handle(payload_mem, payload.length);
 
 }
 ```
@@ -140,7 +144,7 @@ Enjoy.
 
 Hey OSS community, there are a lot of TODOs if someone wants to contribute.
 
-+ Java code fuzzing (waiting for additional exposed methods in frida-java-bridge, should be easy, almost done)
++ ~~Java code fuzzing (waiting for additional exposed methods in frida-java-bridge, should be easy, almost done)~~
 + ~~splice stage (merge two testcase in queue and apply havoc on it)~~
 + inlined istrumentation for x86, arm and arm64 (x86_64 is the only inlined atm)
 + support dictionaries (and so modify also havoc)
