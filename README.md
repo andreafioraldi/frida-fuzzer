@@ -127,7 +127,7 @@ Fuzz the `test_func` function of the `libnative-lib.so` library shipped with the
 with the command:
 
 ```
-host$ ./frida-fuzzer -o output_folder/ com.example.ndktest1
+host$ ./frida-fuzzer -U -o output_folder/ com.example.ndktest1
 ```
 
 Both interesting testcases and crashes are saved into output_folder.

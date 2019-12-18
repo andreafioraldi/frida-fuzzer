@@ -186,6 +186,12 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
         "err": err,
         "stage": exports.stage_name
       }, buf);
+    } else if (err.$handle != undefined) {
+      send({
+        "event": "exception",
+        "err": err.message,
+        "stage": exports.stage_name
+      }, buf);
     }
     throw err;
   }

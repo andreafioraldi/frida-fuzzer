@@ -10,9 +10,13 @@ var func_handle = new NativeFunction(TARGET_FUNCTION, RET_TYPE, ARGS_TYPES, { tr
 
 fuzz.target_module = TARGET_MODULE;
 
-fuzz.fuzzer_test_one_input = function (payload, size) {
+var payload_mem = Memory.alloc(fuzz.config.MAX_FILE);
 
-  func_handle(payload, size);
+fuzz.fuzzer_test_one_input = function (/* Uint8Array */ payload) {
+
+  Memory.writeByteArray(payload_mem, payload, payload.length);
+
+  func_handle(payload_mem, payload.length);
 
 }
 

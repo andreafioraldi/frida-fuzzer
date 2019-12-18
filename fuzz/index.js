@@ -33,6 +33,7 @@ exports.fuzzer_test_one_input = null;
 /* If true, the user has to call fuzzing_loop() manually in a callback
    (see Java example, fuzzing_loop cannot be called during script loading) */
 exports.manual_loop_start = false;
+exports.init_callback = function () {}
 
 // by default stages are from FidgetyAFL
 exports.stages = [
@@ -46,16 +47,15 @@ exports.fuzzing_loop = function () {
     throw "ERROR: fuzzer_test_one_input not set! Cannot start the fuzzing loop!";
   }
 
-  var payload_memory = Memory.alloc(config.MAX_FILE);
-  var payload_len = 0;
+  var payload = [];
 
   function runner(/* ArrayBuffer */ arr_buf) {
     
-    var b = new Uint8Array(arr_buf);
-    var s = Math.min(b.length, config.MAX_FILE);
-    Memory.writeByteArray(payload_memory, b, s);
+    payload = new Uint8Array(arr_buf);
+    if (payload.length > config.MAX_FILE)
+      payload = payload.slice(0, config.MAX_FILE);
 
-    exports.fuzzer_test_one_input(payload_memory, s);
+    exports.fuzzer_test_one_input(payload);
 
   }
   
@@ -64,7 +64,7 @@ exports.fuzzing_loop = function () {
       "event": "crash",
       "err": details,
       "stage": fuzzer.stage_name
-    }, payload_memory.readByteArray(payload_len));
+    }, payload);
     return false;
   });
   
@@ -97,6 +97,8 @@ exports.fuzzing_loop = function () {
 }
 
 rpc.exports.loop = function () {
+
+  exports.init_callback();
 
   if (exports.manual_loop_start) return;
 

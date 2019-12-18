@@ -32,14 +32,13 @@ import random
 
 SPLICE_CYCLES = 15 # warning: must be consistent wiht config.js! 
 
-UNINFORMED_SEED = b"\x00\x00\x00\x00\x00\x00\x00\x00"
+UNINFORMED_SEED = b"0" * 4
 
 DESCR = """Frida Android API Fuzzer [%s]
 Copyright (C) 2019 Andrea Fioraldi <andreafioraldi@gmail.com>
 """ % __version__
 
 opt = argparse.ArgumentParser(description=DESCR, formatter_class=argparse.RawTextHelpFormatter)
-# opt.add_argument("app_name", action="store")
 opt.add_argument("-i", action="store", help="Folder with initial seeds")
 opt.add_argument("-o", action="store", help="Output folder with intermediate seeds and crashes")
 opt.add_argument("-U", action="store_true", help="Connect to USB")
@@ -91,9 +90,7 @@ else:
     else:
         session = frida.attach(app_name)
 
-session.enable_jit()
-
-script = session.create_script(code)
+script = session.create_script(code, runtime="v8")
 
 def locate_diffs(a, b):
     f_loc = None
@@ -273,15 +270,34 @@ def on_crash(message, data):
     script.unload()
     session.detach()
 
+def on_exception(message, data):
+    global queue, script, session
+    print ("\n"*2 + "  ************ EXCEPTION FOUND! ************")
+    print ("    message:", message["err"])
+    print ("")
+    t = int(time.time())
+    name = os.path.join(output_folder, "exception_%s_%d" % (message["stage"], t))
+    #name = os.path.join(output_folder, "crash_%d" % t)
+    print (" >> Saving at %s" % repr(name))
+    with open(name, "wb") as f:
+        f.write(data)
+    print (" >> Press Control-C to exit...")
+    script.unload()
+    session.detach()
+
 def on_stats(message, data):
     status_screen(message)
 
 def on_message(message, data):
     if message["type"] == "error":
         print (" ************** FUZZER ERROR! **************")
-        print ("  line %d: %s" % (message["lineNumber"], message["description"]))
-        print ("  JS stacktrace:\n")
-        print (message["stack"])
+        if "lineNumber" in message:
+            print ("  line %d: %s" % (message["lineNumber"], message["description"]))
+        else:
+            print ("  %s" % message["description"])
+        if "stack" in message:
+            print ("  JS stacktrace:\n")
+            print (message["stack"])
         print ("")
         print (" >> Press Control-C to exit...")
         script.unload()
@@ -298,6 +314,8 @@ def on_message(message, data):
         on_stats(msg, data)
     elif msg["event"] == "crash":
         on_crash(msg, data)
+    elif msg["event"] == "exception":
+        on_exception(msg, data)
     elif msg["event"] == "stats":
         on_stats(msg, data)
 
