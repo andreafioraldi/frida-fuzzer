@@ -216,7 +216,7 @@ function fuzz_havoc(/* ArrayBuffer */ buf, callback, is_splice) {
     exports.stage_name = "havoc";
     exports.stage_max = config.HAVOC_CYCLES * 40; // TODO perf_score & co
   } else {
-    exports.stage_name = "splice " + exports.splice_cycle;
+    exports.stage_name = "splice-" + exports.splice_cycle;
     exports.stage_max = config.SPLICE_HAVOC * 40; // TODO perf_score & co
   }
 

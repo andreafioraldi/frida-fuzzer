@@ -1,8 +1,8 @@
 # Frida API Fuzzer
 
-### WARNING: you need the lastest Frida compiled from git to have this working.
-### Thanks Ole for the fixes on the Stalker.
-### You can also wait for the next Frida release, it will happen ASAP, stay tuned!
+> v1.0 Copyright (C) 2019 Andrea Fioraldi <andreafioraldi@gmail.com>
+
+> Released under the Apache License v2.0
 
 This experimetal fuzzer is meant to be used for API in-memory fuzzing.
 
@@ -15,9 +15,11 @@ are well accepted.
 
 I tested only on the two examples under tests/, this is a WIP project but is know to works at least on GNU/Linux x86_64 and Android x86_64.
 
+You need Frida >= 12.8.0 to run this (`pip3 install -U frida`) and frida-tools to compile harness.
+
 ## Usage
 
-The `fuzz` library has to be imported into a custom harness and then compiled with `frida-compile` to generate the agent that `fuzzer.py` will inject into the target app.
+The `fuzz` library has to be imported into a custom harness and then compiled with `frida-compile` to generate the agent that `frida-fuzzer` will inject into the target app.
 
 The majority of the logic of the fuzzer is in the agent.
 
@@ -44,7 +46,9 @@ fuzz.fuzzer_test_one_input = function (/* NativePointer */ payload, size) {
 
 `fuzz.fuzzer_test_one_input` is mandatory. If you don't specify `fuzz.target_module`, all the code executed will be instrumented.
 
-`fuzzer.py` accepts the following arguments:
+You can also set `fuzz.manual_loop_start = true` to tell the fuzzer that you will call `fuzz.fuzzing_loop()` in a callback and so it must not call it for you (e.g. to start fuzzing when a button is clicked in the Android app).
+
+`frida-fuzzer` accepts the following arguments:
 
 <table>
     <tr>
@@ -60,24 +64,28 @@ fuzz.fuzzer_test_one_input = function (/* NativePointer */ payload, size) {
         <td>Connect to USB</td>
     </tr>
     <tr>
+        <td>-spawn</td>
+        <td>Spawn and attach instead of simply attach</td>
+    </tr>
+    <tr>
         <td>-script SCRIPT</td>
         <td>Script filename (default is fuzzer-agent.js)</td>
     </tr>
 </table>
 
-Running `fuzzer.py` you will see somthing like the following status screen on your terminal:
+Running `./frida-fuzzer -spawn ./tests/test_linux64` you will see something like the following status screen on your terminal:
 
 ```
  |=---------------=[ frida-fuzzer ]=---------------=|
-   target app       : 6103
-   output folder    : /tmp/frida_fuzz_out_4ytgqst_
-   uptime           : 0h-0m-3s
+   target app       : ./tests/test_linux64
+   output folder    : /tmp/frida_fuzz_out_i3x37gbq
+   uptime           : 0h-0m-1s
    last path        : 0h-0m-0s
-   queue size       : 8
-   last stage       : havoc
-   current testcase : id_7_havoc_cov
-   total executions : 87808
-   execution speed  : 29242/sec
+   queue size       : 6
+   last stage       : splice-13
+   current testcase : id_1_havoc_cov
+   total executions : 32000
+   execution speed  : 17298/sec
  |=------------------------------------------------=|
 ```
 
@@ -85,7 +93,7 @@ You can also easily add a custom stage in `fuzz/fuzzer.js` and add it to the sta
 
 ## Example
 
-Firstly, install Frida on your host with `pip3 install frida` (it will be this, for now compile it from master).
+Let's fuzz the native shared library into the example Android app in `tests`.
 
 Make sure to have root on your virtual device:
 
@@ -103,7 +111,7 @@ device# cd /data/local/tmp
 device# ./frida-server
 ```
 
-Now install the test app tests/app-debug.apk using the drag & drop into the emulator window.
+Now install the test app `tests/app-debug.apk` using the drag & drop into the emulator window.
 
 Then, open the app.
 
@@ -113,11 +121,13 @@ Compile the agent script wiht frida-compile:
 host$ frida-compile -x tests/test_ndk_x64.js -o fuzzer-agent.js
 ```
 
-Fuzz the `test_func` function of the libnative-lib.so library shipped with the test app
+Open the app in the emulator.
+
+Fuzz the `test_func` function of the `libnative-lib.so` library shipped with the test app
 with the command:
 
 ```
-host$ ./fuzzer.py -o output_folder/ com.example.ndktest1
+host$ ./frida-fuzzer -o output_folder/ com.example.ndktest1
 ```
 
 Both interesting testcases and crashes are saved into output_folder.
@@ -131,13 +141,13 @@ Enjoy.
 Hey OSS community, there are a lot of TODOs if someone wants to contribute.
 
 + Java code fuzzing (waiting for additional exposed methods in frida-java-bridge, should be easy, almost done)
-+ ~~splice stage (merge two testcase in queue and aplly havoc on it)~~
++ ~~splice stage (merge two testcase in queue and apply havoc on it)~~
 + inlined istrumentation for x86, arm and arm64 (x86_64 is the only inlined atm)
 + support dictionaries (and so modify also havoc)
 + seed selection and performance scoring (explore schedule of AFL)
 + structural mutator (mutate bytes based on a grammar written in JSON)
 + CompareCoverage (sub-instruction profiling to bypass fuzzing roadblocks)
-+ rewrite fuzzer.py in C with frida-core to be able to run all the stuffs on the mobile device
++ rewrite frida-fuzzer in C with frida-core to be able to run all the stuffs on the mobile device
 
 If you have doubt on one of this featues feel free to DM me on [Twitter](https://twitter.com/andreafioraldi).
 

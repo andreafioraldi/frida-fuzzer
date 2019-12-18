@@ -17,6 +17,7 @@
  */
 
 var config = require("./config.js");
+var index = require("./index.js");
 
 var interesting_8  = config.INTERESTING_8;
 var interesting_16 = interesting_8.concat(config.INTERESTING_16);
@@ -313,6 +314,8 @@ exports.mutate_havoc = function (buf) { // ArrayBuffer
           break;
 
         }
+        
+        
         
         default: break;
 

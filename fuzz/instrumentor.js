@@ -19,10 +19,12 @@
 var config = require("./config.js");
 var fuzzer = require("./fuzzer.js");
 
-// Stalker tuning
+// Stalker tuning (from frizzer, thanks to the authos)
+// Ole approves, I don't really know what this the improvement
 var STALKER_QUEUE_CAP = 100000000;
 var STALKER_QUEUE_DRAIN_INT = 1000*1000;
 
+// trustThreshold must be 0, don't change it and especially don't set it to -1
 Stalker.trustThreshold = 0;
 Stalker.queueCapacity = STALKER_QUEUE_CAP;
 Stalker.queueDrainInterval = STALKER_QUEUE_DRAIN_INT;

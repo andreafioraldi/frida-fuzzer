@@ -17,6 +17,8 @@
 
 """
 
+__version__ = "1.0"
+
 import frida
 import base64
 import time
@@ -32,18 +34,25 @@ SPLICE_CYCLES = 15 # warning: must be consistent wiht config.js!
 
 UNINFORMED_SEED = b"\x00\x00\x00\x00\x00\x00\x00\x00"
 
-DESCR = """Frida Android API Fuzzer
+DESCR = """Frida Android API Fuzzer [%s]
 Copyright (C) 2019 Andrea Fioraldi <andreafioraldi@gmail.com>
-"""
+""" % __version__
 
 opt = argparse.ArgumentParser(description=DESCR, formatter_class=argparse.RawTextHelpFormatter)
-opt.add_argument("app_name", action="store")
+# opt.add_argument("app_name", action="store")
 opt.add_argument("-i", action="store", help="Folder with initial seeds")
 opt.add_argument("-o", action="store", help="Output folder with intermediate seeds and crashes")
 opt.add_argument("-U", action="store_true", help="Connect to USB")
+opt.add_argument("-spawn", action="store_true", help="Spawn instead of attach")
 opt.add_argument("-script", action="store", default="fuzzer-agent.js", help="Script filename (default is fuzzer-agent.js)")
+opt.add_argument('target', nargs=argparse.REMAINDER, help="Target program/pid (and arguments if spwaning)")
 
 args = opt.parse_args()
+
+if len(args.target) == 0:
+    print (" >> Target not specified!")
+    exit (1)
+
 if args.o is None:
     output_folder = tempfile.mkdtemp(prefix="frida_fuzz_out_")
     print (" >> Temporary output folder :", output_folder)
@@ -58,9 +67,10 @@ if args.i and not os.path.exists(args.i):
     print (" >> %s doesn't exists!")
     exit (1)
 
-app_name = args.app_name
+app_name = args.target[0]
 try:
     app_name = int(app_name)
+    pid = app_name
 except:
     pass # not a PID
 
@@ -69,9 +79,17 @@ with open(args.script) as f:
 
 if args.U:
     device = frida.get_usb_device()
-    session = device.attach(app_name)
+    if args.spawn:
+        pid = device.spawn(args.target)
+        session = device.attach(pid)
+    else:
+        session = device.attach(app_name)
 else:
-    session = frida.attach(app_name)
+    if args.spawn:
+        pid = frida.spawn(args.target)
+        session = frida.attach(pid)
+    else:
+        session = frida.attach(app_name)
 
 session.enable_jit()
 
@@ -248,7 +266,7 @@ def on_crash(message, data):
     t = int(time.time())
     name = os.path.join(output_folder, "crash_%s_%s_%d" % (message["stage"], message["err"]["type"], t))
     #name = os.path.join(output_folder, "crash_%d" % t)
-    print (" >> Saving at %s" % name)
+    print (" >> Saving at %s" % repr(name))
     with open(name, "wb") as f:
         f.write(data)
     print (" >> Press Control-C to exit...")
