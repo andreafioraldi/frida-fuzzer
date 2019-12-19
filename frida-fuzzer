@@ -85,7 +85,10 @@ if args.U:
         session = device.attach(app_name)
 else:
     if args.spawn:
-        pid = frida.spawn(args.target)
+        if os.getenv("FRIDA_FUZZER_CHILD_OUT"):
+            pid = frida.spawn(args.target)
+        else:
+            pid = frida.spawn(args.target, stdio="pipe")
         session = frida.attach(pid)
     else:
         session = frida.attach(app_name)
