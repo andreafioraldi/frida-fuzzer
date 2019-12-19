@@ -52,6 +52,8 @@ fuzz.fuzzer_test_one_input = function (/* Uint8Array */ payload) {
 
 You can also set `fuzz.manual_loop_start = true` to tell the fuzzer that you will call `fuzz.fuzzing_loop()` in a callback and so it must not call it for you (e.g. to start fuzzing when a button is clicked in the Android app).
 
+The callback `fuzz.init_callback` can be set to execute code when the fuzzer is ready to begin. See `tests/test_java.js` for an example.
+
 `frida-fuzzer` accepts the following arguments:
 
 <table>
