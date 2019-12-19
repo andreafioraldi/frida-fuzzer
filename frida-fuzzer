@@ -183,7 +183,7 @@ last_path = 0
 def readable_time(t):
     h = t // 60 // 60
     m = t // 60 - h * 60
-    s = t - m * 60
+    s = t - m * 60 - h * 60 * 60
     return "%dh-%dm-%ds" % (h, m, s)
 
 def status_screen(status):
