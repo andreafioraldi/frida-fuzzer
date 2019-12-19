@@ -1,7 +1,7 @@
 # Frida API Fuzzer
 
-> v1.0 Copyright (C) 2019 Andrea Fioraldi <andreafioraldi@gmail.com>
-
+> v1.1 Copyright (C) 2019 Andrea Fioraldi <andreafioraldi@gmail.com>
+> 
 > Released under the Apache License v2.0
 
 This experimetal fuzzer is meant to be used for API in-memory fuzzing.
@@ -78,6 +78,9 @@ The callback `fuzz.init_callback` can be set to execute code when the fuzzer is 
         <td>Script filename (default is fuzzer-agent.js)</td>
     </tr>
 </table>
+
+If you don't specify the output folder, a temp folder is created under /tmp.
+If you don't specify the folder with the initial seed, an uninformed seed `0000` is used as starting seed.
 
 Running `./frida-fuzzer -spawn ./tests/test_linux64` you will see something like the following status screen on your terminal:
 
