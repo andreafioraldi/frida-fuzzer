@@ -100,7 +100,8 @@ Running `./frida-fuzzer -spawn ./tests/test_linux64` you will see something like
 
 You can also easily add a custom stage in `fuzz/fuzzer.js` and add it to the stages list in `fuzz/index.js`.
 
-To customize the fuzzer, edit `fuzz/config.js`. The variable that you may want to change are MAP_SIZE (If the code that you are fuzzing is small you can reduce it and gain some speed) and QUEUE_CACHE_MAX_SIZE (increase the queue cache size for more speed, especially on Android).
+To customize the fuzzer, edit `fuzz/config.js`.
+The variables that you may want to change are MAP_SIZE (If the code that you are fuzzing is small you can reduce it and gain a bit of speed), MAX_FILE (the maximum size of generated input) and QUEUE_CACHE_MAX_SIZE (increase the queue cache size for more speed, especially on Android).
 
 ## Example
 
