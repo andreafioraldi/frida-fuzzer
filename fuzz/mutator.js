@@ -17,17 +17,13 @@
  */
 
 var config = require("./config.js");
-var index = require("./index.js");
+var utils = require("./utils.js");
 
 var interesting_8  = config.INTERESTING_8;
 var interesting_16 = interesting_8.concat(config.INTERESTING_16);
 var interesting_32 = interesting_16.concat(config.INTERESTING_32);
 
-function UR(n) {
-
-  return Math.floor(Math.random() * n);
-
-}
+var UR = utils.UR;
 
 function choose_block_len(limit) {
 
@@ -323,7 +319,7 @@ exports.mutate_havoc = function (buf) { // ArrayBuffer
 
   }
   
-  if (temp_len != buf.length)
+  if (temp_len != buf.byteLength)
     return buf.slice(0, temp_len);
   return buf;
 

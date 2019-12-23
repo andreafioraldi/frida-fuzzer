@@ -17,7 +17,7 @@
  */
 
 var config = require("./config.js");
-var fuzzer = require("./fuzzer.js");
+var bitmap = require("./bitmap.js");
 
 // Stalker tuning (from frizzer, thanks to the authos)
 // Ole approves, I don't really know what this the improvement
@@ -42,8 +42,8 @@ function afl_maybe_log (context) { // TODO CModule
   cur_loc  = (cur_loc >> 4) ^ (cur_loc << 8);
   cur_loc &= config.MAP_SIZE - 1;
 
-  //fuzzer.trace_bits[cur_loc ^ prev_loc]++;
-  var x = fuzzer.trace_bits.add(cur_loc ^ prev_loc);
+  //bitmap.trace_bits[cur_loc ^ prev_loc]++;
+  var x = bitmap.trace_bits.add(cur_loc ^ prev_loc);
   x.writeU8((x.readU8() +1) & 0xff);
 
   prev_loc = cur_loc >> 1;
@@ -95,8 +95,8 @@ exports.transforms = {
       iterator.putMovRegAddress("rdx", cur_loc.shr(1));
       // *rbx = rdx
       iterator.putMovRegPtrReg("rbx", "rdx");
-      // rbx = fuzzer.trace_bits
-      iterator.putMovRegAddress("rbx", fuzzer.trace_bits);
+      // rbx = bitmap.trace_bits
+      iterator.putMovRegAddress("rbx", bitmap.trace_bits);
       // rbx += rcx
       iterator.putAddRegReg("rbx", "rcx");
       // (*rbx)++
@@ -116,7 +116,6 @@ exports.transforms = {
   },
   // TODO inline ARM code
   "ia32": generic_transform,
-  "arm": generic_transform,
   "arm64": generic_transform
 };
 

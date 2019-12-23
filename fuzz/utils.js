@@ -27,3 +27,28 @@ exports.hex_to_arrbuf = function(hexstr) {
 
 }
 
+exports.UR = function(n) {
+
+  return Math.floor(Math.random() * n);
+
+}
+
+exports.locate_diffs = function (buf1, buf2) {
+
+    var a = new Uint8Array(buf1);
+    var b = new Uint8Array(buf2);
+
+    var f_loc = null;
+    var l_loc = null;
+    var range = Math.min(a.byteLength, b.byteLength);
+
+    for (var i = 0; i < range; i++) {
+        if (a[i] !== b[i]) {
+            if (f_loc === null) f_loc = i;
+            l_loc = i;
+        }
+    }
+
+    return [f_loc, l_loc];
+
+}

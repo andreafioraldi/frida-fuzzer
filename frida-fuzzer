@@ -117,24 +117,27 @@ class QEntry(object):
 
 class Queue(object):
     def __init__(self):
-        self.size = 0
+        self.max_num = 0
         self.start = None
         self.cur = None
         self.top = None
+        # use a dict for fast lookup by num
+        self.dict = {}
 
-    def add(self, buf, exec_us, new_cov, stage):
+    def add(self, buf, exec_us, new_cov, stage, num):
         q = QEntry()
-        q.filename = os.path.join(output_folder, "id_%d_%s" % (self.size, stage))
+        q.filename = os.path.join(output_folder, "id_%d_%s" % (num, stage))
         if new_cov:
             q.filename += "_cov"
-        q.num = self.size
+        q.num = num
         q.exec_us = exec_us
         q.new_cov = new_cov
         q.time = int(time.time())
         q.size = len(buf)
         with open(q.filename, "wb") as f:
             f.write(buf)
-        self.size += 1
+        self.max_num = max(num, self.max_num)
+        self.dict[num] = q
         if self.top:
             self.top.next = q
             self.top = q
@@ -153,15 +156,16 @@ class Queue(object):
         return self.cur
     
     def find_by_num(self, num):
-        q = self.start
+        '''q = self.start
         while q is not None:
             if q.num == num:
                 return q
             q = q.next
-        return None
+        return None'''
+        return self.dict.get(num, None)
     
     def get_splice_target(self, q, buf):
-        tid = random.randint(0, self.size -1)
+        tid = random.randint(0, self.max_num)
         t = self.find_by_num(tid)
         while t is not None and (t.size < 2 or t.num == q.num):
             t = t.next
@@ -176,9 +180,44 @@ class Queue(object):
         return buf[:split_at] + new_buf[split_at:]
         
 
+# TODO do not use this for initial_queue, and don't use QEntry at all for initial seeds
+class InitialQueue(object):
+    def __init__(self):
+        self.start = None
+        self.cur = None
+        self.top = None
+
+    def add(self, filename):
+        q = QEntry()
+        q.filename = filename
+        if self.top:
+            self.top.next = q
+            self.top = q
+        else:
+            self.start = q
+            self.top = q
+    
+    def uninformed(self):
+        filename = os.path.join(output_folder, "uninformed")
+        with open(filename, "wb") as f:
+            f.write(UNINFORMED_SEED)
+        self.add(filename)
+    
+    def get(self):
+        if self.cur is None:
+            self.cur = self.start
+        else:
+            q = self.cur.next
+            self.cur = q
+        return self.cur
+
+
+initial = InitialQueue()
 queue = Queue()
 start_time = 0
 last_path = 0
+
+messages = 0
 
 def readable_time(t):
     h = t // 60 // 60
@@ -187,7 +226,7 @@ def readable_time(t):
     return "%dh-%dm-%ds" % (h, m, s)
 
 def status_screen(status):
-    global queue, app_name
+    global queue, app_name, messages
     #return
     t = time.time()
     TERM_HOME = "\x1b[H"
@@ -201,11 +240,12 @@ def status_screen(status):
     print (sb)
     print ("   target app       :", app_name)
     print ("   output folder    :", output_folder)
+    #print ("   messages         :", messages)
     print ("   uptime           :", readable_time(t - start_time))
     print ("   last path        :", readable_time(last_path - start_time))
-    print ("   queue size       :", queue.size)
+    print ("   queue size       :", queue.max_num -1)
     print ("   last stage       :", status["stage"])
-    print ("   current testcase :", "<init>" if queue.cur is None else os.path.basename(queue.cur.filename))
+    print ("   current testcase :", status["cur"] if status["cur"] != -1 else "<init>")
     print ("   total executions :", status["total_execs"])
     print ("   execution speed  : %d/sec" % (status["total_execs"] / (t - start_time)))
     print (" |=" + "-"*(len(sb) -5) + "=|\n")
@@ -216,10 +256,12 @@ def on_interesting(message, data):
     exec_us = message["exec_us"]
     new_cov = message["new_cov"]
     stage = message["stage"]
+    num = message["num"]
     last_path = time.time()
-    queue.add(data, exec_us, new_cov, stage)
+    queue.add(data, exec_us, new_cov, stage, num)
 
-def on_next(message, data):
+'''
+def on_next(message, data): # dead code ATM
     global queue
     q = queue.get()
     with open(q.filename, "rb") as f:
@@ -229,6 +271,37 @@ def on_next(message, data):
       "num": q.num,
       "buf": buf.hex(),
       "was_fuzzed": q.was_fuzzed,
+    })
+'''
+
+def on_dry(message, data):
+    global initial
+    q = initial.get()
+    if q is None:
+        script.post({
+          "type": "input",
+          "buf": None,
+        })
+    else:
+        print (" >> Dry run", q.filename)
+        with open(q.filename, "rb") as f:
+            buf = f.read()
+        script.post({
+          "type": "input",
+          "num": q.num,
+          "buf": buf.hex(),
+        })
+
+def on_get(message, data):
+    global queue
+    num = message["num"]
+    q = queue.find_by_num(num)
+    with open(q.filename, "rb") as f:
+        buf = f.read()
+    script.post({
+      "type": "input",
+      "num": q.num,
+      "buf": buf.hex(),
     })
 
 def on_splice(message, data):
@@ -248,6 +321,7 @@ def on_splice(message, data):
         script.post({
           "type": "splice",
           "buf": None, # failed
+          "cycle": splice_cycle,
         })
     else:
         script.post({
@@ -292,6 +366,8 @@ def on_stats(message, data):
     status_screen(message)
 
 def on_message(message, data):
+    global messages
+    messages += 1
     if message["type"] == "error":
         print (" ************** FUZZER ERROR! **************")
         if "lineNumber" in message:
@@ -309,15 +385,23 @@ def on_message(message, data):
     if msg["event"] == "interesting":
         on_interesting(msg, data)
         on_stats(msg, data)
-    elif msg["event"] == "next":
-        on_next(msg, data)
+    #elif msg["event"] == "next": # not used 
+    #    on_next(msg, data)
+    #    on_stats(msg, data)
+    elif msg["event"] == "get":
+        on_get(msg, data)
+        on_stats(msg, data)
+    elif msg["event"] == "dry":
+        on_dry(msg, data)
         on_stats(msg, data)
     elif msg["event"] == "splice":
         on_splice(msg, data)
         on_stats(msg, data)
     elif msg["event"] == "crash":
+        on_stats(msg, data)
         on_crash(msg, data)
     elif msg["event"] == "exception":
+        on_stats(msg, data)
         on_exception(msg, data)
     elif msg["event"] == "stats":
         on_stats(msg, data)
@@ -326,7 +410,11 @@ script.on('message', on_message)
 script.load()
 
 def signal_handler(sig, frame):
+    global pid
     print (" >> Exiting...")
+    if args.spawn and not args.U:
+        print (" >> Killing", pid)
+        os.kill(pid, signal.SIGKILL)
     try:
         script.unload()
         session.detach()
@@ -334,18 +422,17 @@ def signal_handler(sig, frame):
     os._exit (0)
 signal.signal(signal.SIGINT, signal_handler)
 
-start_time = int(time.time())
-
-last_path = start_time
-
 if args.i is None:
-    queue.add(UNINFORMED_SEED, 0, True, "init")
+    initial.uninformed()
 else:
     for fname in os.listdir(args.i):
         p = os.path.join(args.i, fname)
-        if not os.path.isfile(p): continue
-        with open(p, "rb") as f:
-            queue.add(f.read(), 0, True, "init")
+        if os.path.isfile(p):
+            initial.add(p)
+
+start_time = int(time.time())
+
+last_path = start_time
 
 try:
     script.exports.loop()

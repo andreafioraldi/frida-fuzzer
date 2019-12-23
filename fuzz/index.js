@@ -16,15 +16,23 @@
 
  */
 
-var fuzzer = require("./fuzzer.js");
+var stages = require("./stages.js");
 var config = require("./config.js");
 var mutator = require("./mutator.js");
 var instr = require("./instrumentor.js");
+var bitmap = require("./bitmap.js");
+var queue = require("./queue.js");
+var state = require("./state.js");
 var utils = require("./utils.js");
 
-exports.fuzzer = fuzzer;
+exports.stages = stages;
 exports.config = config;
 exports.mutator = mutator;
+exports.instr = instr;
+exports.bitmap = config;
+exports.queue = queue;
+exports.state = state;
+exports.utils = utils;
 
 /* Define this to exclude other modules from instrumentation */
 exports.target_module = null;
@@ -36,9 +44,9 @@ exports.manual_loop_start = false;
 exports.init_callback = function () {}
 
 // by default stages are from FidgetyAFL
-exports.stages = [
-  fuzzer.havoc_stage,
-  fuzzer.splice_stage,
+exports.stages_list = [
+  stages.havoc_stage,
+  stages.splice_stage,
 ];
 
 exports.fuzzing_loop = function () {
@@ -47,7 +55,7 @@ exports.fuzzing_loop = function () {
     throw "ERROR: fuzzer_test_one_input not set! Cannot start the fuzzing loop!";
   }
 
-  var payload = [];
+  var payload = null; // Uint8Array
 
   function runner(/* ArrayBuffer */ arr_buf) {
     
@@ -63,34 +71,25 @@ exports.fuzzing_loop = function () {
     send({
       "event": "crash",
       "err": details,
-      "stage": fuzzer.stage_name
+      "stage": state.stage_name
     }, payload);
     return false;
   });
   
   instr.start_tracing(Process.getCurrentThreadId(), exports.target_module);
 
+  console.log(" >> Dry run...");
+
+  stages.dry_run(runner);
+
   console.log(" >> Starting fuzzing loop...");
   
   while (true) {
 
-    send({
-      "event": "next",
-      "stage": fuzzer.stage_name,
-      "total_execs": fuzzer.total_execs,
-    });
+    var buf = queue.next();
 
-    var buf = undefined;
-    var op = recv("input", function (val) {
-      buf = utils.hex_to_arrbuf(val.buf);
-      fuzzer.queue_cur = val.num;
-      //val.was_fuzzed
-    });
-
-    op.wait();
-
-    for(var stage of exports.stages)
-        stage(buf, runner);
+    for(var stage of exports.stages_list)
+      stage(buf, runner);
 
   }
 
