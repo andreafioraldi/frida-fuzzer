@@ -331,7 +331,7 @@ def on_splice(message, data):
         })
 
 def on_crash(message, data):
-    global queue, script, session
+    global queue, script, session, pid
     print ("\n"*2 + "  ************** CRASH FOUND! **************")
     print ("    type:", message["err"]["type"])
     if "memory" in message["err"]:
@@ -343,12 +343,15 @@ def on_crash(message, data):
     print (" >> Saving at %s" % repr(name))
     with open(name, "wb") as f:
         f.write(data)
+    if args.spawn and not args.U:
+        print (" >> Killing", pid)
+        os.kill(pid, signal.SIGKILL)
     print (" >> Press Control-C to exit...")
     script.unload()
     session.detach()
 
 def on_exception(message, data):
-    global queue, script, session
+    global queue, script, session, pid
     print ("\n"*2 + "  ************ EXCEPTION FOUND! ************")
     print ("    message:", message["err"])
     print ("")
@@ -358,6 +361,9 @@ def on_exception(message, data):
     print (" >> Saving at %s" % repr(name))
     with open(name, "wb") as f:
         f.write(data)
+    if args.spawn and not args.U:
+        print (" >> Killing", pid)
+        os.kill(pid, signal.SIGKILL)
     print (" >> Press Control-C to exit...")
     script.unload()
     session.detach()
@@ -366,7 +372,7 @@ def on_stats(message, data):
     status_screen(message)
 
 def on_message(message, data):
-    global messages
+    global messages, pid
     messages += 1
     if message["type"] == "error":
         print (" ************** FUZZER ERROR! **************")
@@ -378,6 +384,9 @@ def on_message(message, data):
             print ("  JS stacktrace:\n")
             print (message["stack"])
         print ("")
+        if args.spawn and not args.U:
+          print (" >> Killing", pid)
+          os.kill(pid, signal.SIGKILL)
         print (" >> Press Control-C to exit...")
         script.unload()
         session.detach()

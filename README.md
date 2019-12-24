@@ -54,6 +54,8 @@ You can also set `fuzz.manual_loop_start = true` to tell the fuzzer that you wil
 
 The callback `fuzz.init_callback` can be set to execute code when the fuzzer is ready to begin. See `tests/test_java.js` for an example.
 
+`fuzz.dictionary` is a classic fuzzer dictionary, an array in which you can add items (accepted types are Array, ArrayBuffer, Uint8Array, String) that are used as additional values in the mutator. See `tests/test_libxml2.js` for an example.
+
 `frida-fuzzer` accepts the following arguments:
 
 <table>
@@ -155,7 +157,7 @@ Hey OSS community, there are a lot of TODOs if someone wants to contribute.
 + ~~Java code fuzzing (waiting for additional exposed methods in frida-java-bridge, should be easy, almost done)~~
 + ~~splice stage (merge two testcase in queue and apply havoc on it)~~
 + inlined istrumentation for x86, arm and arm64 (x86_64 is the only inlined atm)
-+ support dictionaries (and so modify also havoc)
++ ~~support dictionaries (and so modify also havoc)~~
 + seed selection and performance scoring (explore schedule of AFL)
 + structural mutator (mutate bytes based on a grammar written in JSON)
 + CompareCoverage (sub-instruction profiling to bypass fuzzing roadblocks)

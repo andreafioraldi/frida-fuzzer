@@ -51,6 +51,25 @@ exports.stages_list = [
 
 exports.dictionary = [];
 
+function normalize_dict () {
+
+  var d = exports.dictionary;
+  // Accepted types are: Array Uint8Array ArrayBuffer String
+  for (var i = 0; i < d.length; ++i) {
+  
+    if (Array.isArray(d[i]) || (d[i] instanceof ArrayBuffer))
+      d[i] = new Uint8Array(d[i]);
+
+    else if (typeof d[i] === 'string' || (d[i] instanceof String))
+      d[i] = utils.str_to_uint8arr(d[i]);
+
+    else if (!(d[i] instanceof Uint8Array))
+      throw "ERROR: unsupported type for a fuzzer dictionary";
+  
+  }
+
+}
+
 exports.fuzzing_loop = function () {
 
   if (exports.fuzzer_test_one_input === null) {
@@ -68,6 +87,8 @@ exports.fuzzing_loop = function () {
     exports.fuzzer_test_one_input(payload);
 
   }
+  
+  normalize_dict();
   
   Process.setExceptionHandler(function (details) {
     send({

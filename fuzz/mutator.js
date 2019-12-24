@@ -75,7 +75,7 @@ exports.mutate_havoc = function (buf) { // ArrayBuffer
 
   for (var i = 0; i < use_stacking; i++) {
 
-    switch (UR(15)) {
+    switch (UR(15 + ((index.dictionary.length > 0) ? 2 : 0))) {
 
       case 0:
 
@@ -312,8 +312,60 @@ exports.mutate_havoc = function (buf) { // ArrayBuffer
 
         }
 
-        
-        default: throw "havoc switch oob, something is really wrong here!";
+      /* Values 15 and 16 can be selected only if there are any extras
+         present in the dictionaries. */
+
+      case 15: {
+
+          /* Overwrite bytes with an extra. */
+
+          var use_extra = UR(index.dictionary.length);
+          var extra_len = index.dictionary[use_extra].byteLength;
+
+          if (extra_len > temp_len) break;
+
+          var insert_at = UR(temp_len - extra_len + 1);
+          for (var j = 0; j < extra_len; ++j)
+            out_buf.setUint8(insert_at + j, index.dictionary[use_extra][j]);
+
+          break;
+
+        }
+
+      case 16: {
+
+          var insert_at = UR(temp_len + 1);
+
+          /* Insert an extra. */
+
+          var use_extra = UR(index.dictionary.length);
+          var extra_len = index.dictionary[use_extra].byteLength;
+
+          if (temp_len + extra_len >= config.MAX_FILE) break;
+
+          buf = new ArrayBuffer(temp_len + extra_len);
+          var new_buf = new DataView(buf);
+
+          /* Head */
+          for (var j = 0; j < insert_at; ++j)
+            new_buf.setUint8(j, out_buf.getUint8(j));
+
+          /* Inserted part */
+          for (var j = 0; j < extra_len; ++j)
+            new_buf.setUint8(insert_at + j, index.dictionary[use_extra][j]);
+
+          /* Tail */
+          for (var j = insert_at; j < temp_len; ++j)
+            new_buf.setUint8(extra_len + j, out_buf.getUint8(j));
+
+          out_buf   = new_buf;
+          temp_len += extra_len;
+
+          break;
+
+        }
+
+        default: throw "ERROR: havoc switch oob, something is really wrong here!";
 
     }
 

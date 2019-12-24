@@ -20,6 +20,7 @@ if [ '!' "$EUID" = 0 ] && [ '!' `id -u` = 0 ] ; then
 	exit 1
 fi
 if [ "$PLATFORM" = "Linux" ] ; then
+sysctl -w kernel.yama.ptrace_scope=0
 sysctl -w kernel.core_pattern=core
 sysctl -w kernel.randomize_va_space=0
 sysctl -w kernel.sched_child_runs_first=1
