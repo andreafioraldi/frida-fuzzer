@@ -24,12 +24,13 @@ var bitmap = require("./bitmap.js");
 var queue = require("./queue.js");
 
 var zeroed_bits = new Uint8Array(config.MAP_SIZE); // TODO memset(..., 0, ...)
+var last_status_ts = 0;
 
 function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
 
   Memory.writeByteArray(bitmap.trace_bits, zeroed_bits);
 
-  var ts = (new Date()).getTime();
+  var ts_0 = (new Date()).getTime();
 
   try {
     callback(buf);
@@ -55,7 +56,8 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
     throw err;
   }
 
-  var exec_us = (new Date()).getTime() - ts;
+  var ts_1 = (new Date()).getTime();
+  var exec_us = ts_1 - ts_0;
   
   bitmap.classify_counts(bitmap.trace_bits, bitmap.count_class_lookup16);
   
@@ -64,13 +66,15 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
   
   if (bitmap.save_if_interesting(buf, exec_us)) {
   
-    if (state.total_execs & 0xfff == 0)
+    if ((ts_1 - last_status_ts) > config.UPDATE_TIME) {
+      last_status_ts = ts_1;
       send({
         "event": "status",
         "stage": state.stage_name,
         "cur": queue.cur_idx,
         "total_execs": state.total_execs,
       });
+    }
       
   }
   
