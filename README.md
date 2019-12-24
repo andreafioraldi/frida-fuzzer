@@ -1,6 +1,6 @@
 # Frida API Fuzzer
 
-> v1.1 Copyright (C) 2019 Andrea Fioraldi <andreafioraldi@gmail.com>
+> v1.2 Copyright (C) 2019 Andrea Fioraldi <andreafioraldi@gmail.com>
 > 
 > Released under the Apache License v2.0
 
@@ -83,6 +83,8 @@ The callback `fuzz.init_callback` can be set to execute code when the fuzzer is 
 
 If you don't specify the output folder, a temp folder is created under /tmp.
 If you don't specify the folder with the initial seed, an uninformed seed `0000` is used as starting seed.
+
+If you are fuzzing a local application, you may want to execute `system-config` before `frida-fuzzer` to tune the parameters of your system and speed-up the things.
 
 Running `./frida-fuzzer -spawn ./tests/test_linux64` you will see something like the following status screen on your terminal:
 
