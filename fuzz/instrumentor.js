@@ -19,55 +19,50 @@
 var config = require("./config.js");
 var bitmap = require("./bitmap.js");
 
-// Stalker tuning (from frizzer, thanks to the authos)
-// Ole approves, I don't really know what this the improvement
-var STALKER_QUEUE_CAP = 100000000;
-var STALKER_QUEUE_DRAIN_INT = 1000*1000;
-
 // trustThreshold must be 0, don't change it and especially don't set it to -1
 Stalker.trustThreshold = 0;
-Stalker.queueCapacity = STALKER_QUEUE_CAP;
-Stalker.queueDrainInterval = STALKER_QUEUE_DRAIN_INT;
 
-var start_addr = ptr(0);
-var end_addr = ptr("-1");
+exports.prev_loc_map = {}
 
-var prev_loc_ptr = Memory.alloc(32);
-var prev_loc = 0;
+exports.start_tracing = function(thread_id, target_module) {
+    
+  var start_addr = ptr(0);
+  var end_addr = ptr("-1");
 
-function afl_maybe_log (context) { // TODO CModule
-  
-  var cur_loc = context.pc.toInt32();
-  
-  cur_loc  = (cur_loc >> 4) ^ (cur_loc << 8);
-  cur_loc &= config.MAP_SIZE - 1;
+  var maps = function() {
 
-  //bitmap.trace_bits[cur_loc ^ prev_loc]++;
-  var x = bitmap.trace_bits.add(cur_loc ^ prev_loc);
-  x.writeU8((x.readU8() +1) & 0xff);
+      var maps = Process.enumerateModulesSync();
+      var i = 0;
+      
+      maps.map(function(o) { o.id = i++; });
+      maps.map(function(o) { o.end = o.base.add(o.size); });
 
-  prev_loc = cur_loc >> 1;
+      return maps;
 
-}
+  }();
 
-var generic_transform = function (iterator) { // TODO CModule
+  if (target_module !== null) {
+    maps.forEach(function(m) {
 
-  var i = iterator.next();
-  
-  var cur_loc = i.address;
+      if (m.name == target_module || m == target_module) {
+        start_addr = m.base;
+        end_addr = m.end;
+      } else {
+        Stalker.exclude(m);
+      }
 
-  if (cur_loc.compare(start_addr) > 0 &&
-      cur_loc.compare(end_addr) < 0)
-    iterator.putCallout(afl_maybe_log);
+    });
+  }
 
-  do iterator.keep()
-  while ((i = iterator.next()) !== null);
+  var prev_loc_ptr = exports.prev_loc_map[thread_id];
+  if (prev_loc_ptr === undefined) {
+    prev_loc_ptr = Memory.alloc(32);
+    exports.prev_loc_map[thread_id] = prev_loc_ptr;
+  }
 
-}
-
-exports.transforms = {
-  "x64": function (iterator) { // TODO CModule
-  
+  // Fast inline instrumentation for x86_64
+  exports.transform_x64 = function (iterator) {
+    
     var i = iterator.next();
     
     var cur_loc = i.address;
@@ -109,42 +104,64 @@ exports.transforms = {
       iterator.putPopfx();
     
     }
-
+    
     do iterator.keep()
     while ((i = iterator.next()) !== null);
 
-  },
-  // TODO inline ARM code
-  "ia32": generic_transform,
-  "arm64": generic_transform
-};
-
-exports.start_tracing = function(thread_id, target_module) {
-
-  var maps = function() {
-
-      var maps = Process.enumerateModulesSync();
-      var i = 0;
-      
-      maps.map(function(o) { o.id = i++; });
-      maps.map(function(o) { o.end = o.base.add(o.size); });
-
-      return maps;
-
-  }();
-
-  if (target_module !== null) {
-    maps.forEach(function(m) {
-
-      if (m.name == target_module || m == target_module) {
-        start_addr = m.base;
-        end_addr = m.end;
-      } else {
-        Stalker.exclude(m);
-      }
-
-    });
   }
+    
+  exports.__cm = new CModule(`
+
+  #include <stdint.h>
+  #include <gum/gumstalker.h>
+
+  typedef uint8_t u8;
+  typedef uint16_t u16;
+  typedef uint32_t u32;
+
+  static void afl_maybe_log (GumCpuContext * cpu_context, gpointer user_data) {
+
+    u8 * trace_bits = (u8*)(__TRACE_BITS__);
+    uintptr_t * prev_loc_ptr = (uintptr_t*)(__PREV_LOC__);
+    
+    uintptr_t cur_loc = (uintptr_t)user_data;
+    
+    trace_bits[cur_loc ^ (*prev_loc_ptr)]++;
+    *prev_loc_ptr = cur_loc >> 1;
+
+  }
+
+  void transform (GumStalkerIterator * iterator, GumStalkerWriter * output, gpointer user_data) {
+
+    cs_insn * i;
+    gum_stalker_iterator_next (iterator, &i);
+    
+    uintptr_t cur_loc = i->address;
+    
+    if (cur_loc >= (__START__) && cur_loc < (__END__)) {
+    
+      cur_loc  = (cur_loc >> 4) ^ (cur_loc << 8);
+      cur_loc &= (__MAP_SIZE__) - 1;
+    
+      gum_stalker_iterator_put_callout (iterator, afl_maybe_log, (gpointer)cur_loc, NULL);
+    
+    }
+
+    do gum_stalker_iterator_keep (iterator);
+    while (gum_stalker_iterator_next (iterator, &i));
+
+  }
+
+  `.replace("__TRACE_BITS__", bitmap.trace_bits.toString())
+   .replace("__PREV_LOC__", prev_loc_ptr.toString())
+   .replace("__START__", start_addr.toString())
+   .replace("__END__", end_addr.toString())
+   .replace("__MAP_SIZE__", config.MAP_SIZE.toString())
+  );
+  
+  var t = exports.__cm.transform;
+  if (Process.arch == "x64")
+    t = exports.transform_x64;
   
   Stalker.follow(thread_id, {
       events: {
@@ -155,8 +172,7 @@ exports.start_tracing = function(thread_id, target_module) {
           compile: true
       },
       
-    transform: exports.transforms[Process.arch],
-    //transform: generic_transform,
+    transform: t
   });
 
 }

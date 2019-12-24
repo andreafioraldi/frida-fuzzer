@@ -15,7 +15,7 @@ are well accepted.
 
 I tested only on the two examples under tests/, this is a WIP project but is know to works at least on GNU/Linux x86_64 and Android x86_64.
 
-You need Frida >= 12.8.0 to run this (`pip3 install -U frida`) and frida-tools to compile harness.
+You need Frida >= 12.8.1 to run this (`pip3 install -U frida`) and frida-tools to compile harness.
 
 ## Usage
 
