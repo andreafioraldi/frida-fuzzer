@@ -49,6 +49,8 @@ exports.stages_list = [
   stages.splice_stage,
 ];
 
+exports.dictionary = [];
+
 exports.fuzzing_loop = function () {
 
   if (exports.fuzzer_test_one_input === null) {

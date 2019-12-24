@@ -18,6 +18,7 @@
 
 var config = require("./config.js");
 var utils = require("./utils.js");
+var index = require("./index.js");
 
 var interesting_8  = config.INTERESTING_8;
 var interesting_16 = interesting_8.concat(config.INTERESTING_16);
@@ -74,7 +75,7 @@ exports.mutate_havoc = function (buf) { // ArrayBuffer
 
   for (var i = 0; i < use_stacking; i++) {
 
-    switch (UR(14)) {
+    switch (UR(15)) {
 
       case 0:
 
@@ -310,10 +311,9 @@ exports.mutate_havoc = function (buf) { // ArrayBuffer
           break;
 
         }
+
         
-        
-        
-        default: break;
+        default: throw "havoc switch oob, something is really wrong here!";
 
     }
 
