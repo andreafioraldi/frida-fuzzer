@@ -24,6 +24,11 @@ exports.virgin_bits = Memory.alloc(config.MAP_SIZE);
 for (var i = 0; i < config.MAP_SIZE; i += 4)
   exports.virgin_bits.add(i).writeU32(0xffffffff);
 
+exports.top_rated = new Array(config.MAP_SIZE);
+exports.score_changed = false;
+
+exports.map_rate = 0;
+
 /* Init count class lookup */
 
 var count_class_lookup8 = new Uint8Array(256);
@@ -130,6 +135,36 @@ int has_new_bits(u8* trace_bits, u8* virgin_map) {
 
 }
 
+void minimize_bits(u8* dst, u8* src) {
+
+  u32 i = 0;
+
+  while (i < MAP_SIZE) {
+
+    if (*(src++)) dst[i >> 3] |= 1 << (i & 7);
+    i++;
+
+  }
+
+}
+
+u32 update_bitmap_score_loop(u8* trace_bits, u8* virgin_bits, void (*body)(s32)) {
+
+  u32 i, cnt = 0;
+  for (i = 0; i < MAP_SIZE; ++i) {
+  
+    if (trace_bits[i])
+      body(i);
+    
+    if (virgin_bits[i] != 0xff)
+      ++cnt;
+  
+  }
+  
+  return cnt;
+
+}
+
   `.replace("__MAP_SIZE__", ""+config.MAP_SIZE)
 );
 
@@ -145,6 +180,94 @@ exports.has_new_bits = new NativeFunction(
   ["pointer", "pointer"]
 );
 
+var minimize_bits = new NativeFunction(
+  exports.__cm.minimize_bits,
+  "void",
+  ["pointer", "pointer"]
+);
+
+var update_bitmap_score_loop = new NativeFunction(
+  exports.__cm.update_bitmap_score_loop,
+  "uint",
+  ["pointer", "pointer", "pointer"]
+);
+
+
+exports.update_bitmap_score = function (q) {
+
+  var fav_factor = q.exec_us * q.size;
+  var top_rated = exports.top_rated;
+  
+  function update_bitmap_score_body (i) {
+
+    if (top_rated[i] !== undefined) {
+
+      /* Faster-executing or smaller test cases are favored. */
+
+      if (fav_factor > top_rated[i].exec_us * top_rated[i].size)
+        return;
+
+      if (!--top_rated[i].tc_ref)
+        top_rated[i].trace_mini = null;
+
+    }
+
+    /* Insert ourselves as the new winner. */
+
+    top_rated[i] = q;
+    q.tc_ref++;
+    
+    if (q.trace_mini === null) {
+
+      q.trace_mini = Memory.alloc(config.MAP_SIZE >> 3);
+      minimize_bits(q.trace_mini, exports.trace_bits);
+
+    }
+
+    exports.score_changed = true;
+
+  }
+  
+  var cb = new NativeCallback(update_bitmap_score_body, "void", ["int"]);
+  
+  /* For every byte set in trace_bits[], see if there is a previous winner,
+     and how it compares to us. */
+ 
+  var filled = update_bitmap_score_loop(exports.trace_bits, exports.virgin_bits, cb);
+  exports.map_rate = filled * 100 / config.MAP_SIZE;
+  
+  /* for (var i = 0; i < config.MAP_SIZE; i++) {
+
+    if (trace_bits_arr[i] !== 0) {
+
+      if (top_rated[i] !== undefined) {
+
+        if (fav_factor > top_rated[i].exec_us * top_rated[i].size)
+          continue;
+
+        if (!--top_rated[i].tc_ref)
+          top_rated[i].trace_mini = null;
+
+      }
+
+      top_rated[i] = q;
+      q.tc_ref++;
+      
+      if (q.trace_mini === null) {
+
+        q.trace_mini = Memory.alloc(config.MAP_SIZE >> 3);
+        minimize_bits(q.trace_mini, exports.trace_bits);
+
+      }
+
+      exports.score_changed = true;
+
+    }
+  
+  } */
+
+}
+
 exports.save_if_interesting = function (buf, exec_us) {
   
   var hnb = exports.has_new_bits(exports.trace_bits, exports.virgin_bits);
@@ -152,6 +275,7 @@ exports.save_if_interesting = function (buf, exec_us) {
     return true;
   
   queue.add(buf, exec_us, (hnb == 2));
+  exports.update_bitmap_score(queue.last());
 
   return false;  
   

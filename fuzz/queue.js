@@ -18,7 +18,11 @@
 
 var config  = require("./config.js");
 var state = require("./state.js");
+var bitmap = require("./bitmap.js");
 var utils  = require("./utils.js");
+
+var temp_v_size = config.MAP_SIZE >> 3;
+var temp_v = Memory.alloc(temp_v_size);
 
 var queue = [];
 
@@ -29,9 +33,17 @@ var bytes_size = 0;
 exports.cur = null;
 exports.cur_idx = -1;
 
+exports.pending_favored = 0;
+
 exports.size = function () {
 
   return queue.length;
+
+};
+
+exports.last = function () {
+
+  return queue[queue.length -1];
 
 };
 
@@ -53,6 +65,8 @@ exports.next = function () {
       "stage": state.stage_name,
       "cur": exports.cur_idx,
       "total_execs": state.total_execs,
+      "pending_fav": exports.pending_favored,
+      "map_rate": bitmap.map_rate,
     });
     
     var buf = undefined;
@@ -139,7 +153,15 @@ exports.add = function (buf, exec_us, has_new_cov) {
 
   if (buf.byteLength >= config.QUEUE_CACHE_MAX_SIZE) {
     
-    queue.push({buf: null, size: buf.byteLength, exec_us: exec_us});
+    queue.push({
+      buf: null,
+      size: buf.byteLength,
+      exec_us: exec_us,
+      favored: false,
+      was_fuzzed: false,
+      trace_mini: null,
+      tc_ref: 0,
+    });
     
   } else {
 
@@ -148,7 +170,15 @@ exports.add = function (buf, exec_us, has_new_cov) {
     if (bytes_size >= config.QUEUE_CACHE_MAX_SIZE)
       prune_memory();
 
-    queue.push({buf: buf.slice(0), size: buf.byteLength, exec_us: exec_us});
+    queue.push({
+      buf: buf.slice(0),
+      size: buf.byteLength,
+      exec_us: exec_us,
+      favored: false,
+      was_fuzzed: false,
+      trace_mini: null,
+      tc_ref: 0,
+    });
 
   }
 
@@ -160,6 +190,8 @@ exports.add = function (buf, exec_us, has_new_cov) {
     "stage": state.stage_name,
     "cur": exports.cur_idx,
     "total_execs": state.total_execs,
+    "pending_fav": exports.pending_favored,
+    "map_rate": bitmap.map_rate,
   }, buf);
 
 }
@@ -188,6 +220,8 @@ exports.splice_target = function (buf) {
       "stage": state.stage_name,
       "cur": exports.cur_idx,
       "total_execs": state.total_execs,
+      "pending_fav": exports.pending_favored,
+      "map_rate": bitmap.map_rate,
     });
     
     var op = recv("splice", function (val) {
@@ -221,5 +255,53 @@ exports.splice_target = function (buf) {
   var split_at = diff[0] + utils.UR(diff[1] - diff[0]);
   new Uint8Array(new_buf).set(new Uint8Array(buf.slice(0, split_at)), 0);
   return new_buf;
+
+}
+
+
+exports.cull = function () {
+
+  if (!bitmap.score_changed) return;
+
+  bitmap.score_changed = false;
+  exports.pending_favored = 0;
+  
+  var top_rated = bitmap.top_rated;
+  
+  var i;
+  for (i = 0; i < temp_v_size; i += 4)
+    temp_v.add(i).writeU32(0xffffffff);
+  
+  var temp_v_arr = new Uint8Array(ArrayBuffer.wrap(temp_v, temp_v_size));
+  
+  for (i = 0; i < queue.length; ++i)
+    queue[i].favored = false;
+
+  /* Let's see if anything in the bitmap isn't captured in temp_v.
+     If yes, and if it has a top_rated[] contender, let's use it. */
+
+  for (i = 0; i < config.MAP_SIZE; i++) {
+  
+    if (top_rated[i] !== undefined && (temp_v_arr[i >> 3] & (1 << (i & 7))) !== 0) {
+
+      var j = config.MAP_SIZE >> 3;
+
+      /* Remove all bits belonging to the current entry from temp_v. */
+
+      while (j--) {
+        if (top_rated[i].trace_mini[j])
+          temp_v_arr[j] &= ~top_rated[i].trace_mini[j];
+      }
+
+      if (!top_rated[i].favored && !top_rated[i].was_fuzzed) exports.pending_favored++;
+
+      top_rated[i].favored = true;
+      // favored++;
+
+      
+
+    }
+  
+  }
 
 }

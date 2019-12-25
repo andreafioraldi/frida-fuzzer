@@ -43,6 +43,8 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
         "stage": state.stage_name,
         "cur": queue.cur_idx,
         "total_execs": state.total_execs,
+        "pending_fav": queue.pending_favored,
+        "map_rate": bitmap.map_rate,
       }, buf);
     } else if (err.$handle != undefined) {
       send({
@@ -51,6 +53,8 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
         "stage": state.stage_name,
         "cur": queue.cur_idx,
         "total_execs": state.total_execs,
+        "pending_fav": queue.pending_favored,
+        "map_rate": bitmap.map_rate,
       }, buf);
     }
     throw err;
@@ -73,10 +77,16 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
         "stage": state.stage_name,
         "cur": queue.cur_idx,
         "total_execs": state.total_execs,
+        "pending_fav": queue.pending_favored,
+        "map_rate": bitmap.map_rate,
       });
     }
+    
+    return exec_us; // return exec_us when not saved
       
   }
+  
+  return null;
   
 }
 
@@ -92,6 +102,8 @@ exports.dry_run = function (callback) {
       "stage": state.stage_name,
       "cur": queue.cur_idx,
       "total_execs": state.total_execs,
+      "pending_fav": queue.pending_favored,
+      "map_rate": bitmap.map_rate,
     });
 
     var op = recv("input", function (val) {
@@ -106,7 +118,13 @@ exports.dry_run = function (callback) {
     op.wait();
     if (buf === null) break;
     
-    common_fuzz_stuff(buf, callback);
+    var exec_us = common_fuzz_stuff(buf, callback);
+    if (exec_us !== null) { // always save initial seeds
+    
+      queue.add(buf, exec_us, false);
+      bitmap.update_bitmap_score(queue.last());
+
+    }
 
   }
 

@@ -94,7 +94,11 @@ exports.fuzzing_loop = function () {
     send({
       "event": "crash",
       "err": details,
-      "stage": state.stage_name
+      "stage": state.stage_name,
+      "cur": queue.cur_idx,
+      "total_execs": state.total_execs,
+      "pending_fav": queue.pending_favored,
+      "map_rate": bitmap.map_rate,
     }, payload);
     return false;
   });
@@ -104,15 +108,45 @@ exports.fuzzing_loop = function () {
   console.log(" >> Dry run...");
 
   stages.dry_run(runner);
+  queue.cull();
 
   console.log(" >> Starting fuzzing loop...");
-  
+
   while (true) {
 
     var buf = queue.next();
+    
+    queue.cull();
+
+    if (queue.pending_favored > 0) {
+
+      if ((queue.cur.was_fuzzed || !queue.cur.favored) &&
+          utils.UR(100) < config.SKIP_TO_NEW_PROB)
+        continue;
+
+    } else if (!queue.cur.favored && queue.size() > 10) {
+
+      if (!queue.cur.was_fuzzed)
+        if (utils.UR(100) < config.SKIP_NFAV_NEW_PROB)
+          continue;
+      else
+        if (utils.UR(100) < config.SKIP_NFAV_OLD_PROB)
+          continue;
+
+    }
+    
+    // bitmap.update_bitmap_score(queue.cur);
 
     for(var stage of exports.stages_list)
       stage(buf, runner);
+
+    if (!queue.cur.was_fuzzed) {
+    
+      queue.cur.was_fuzzed = true;
+      if (queue.cur.favored)
+        queue.pending_favored--;
+    
+    }
 
   }
 

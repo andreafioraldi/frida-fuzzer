@@ -30,6 +30,10 @@ import argparse
 import tempfile
 import random
 
+TERM_HOME = "\x1b[H"
+TERM_CLEAR = TERM_HOME + "\x1b[2J"
+FUZZER_NAME = "frida-fuzzer %s" % __version__
+
 SPLICE_CYCLES = 15 # warning: must be consistent wiht config.js! 
 
 UNINFORMED_SEED = b"0" * 4
@@ -229,26 +233,37 @@ def status_screen(status):
     global queue, app_name, messages
     #return
     t = time.time()
-    TERM_HOME = "\x1b[H"
-    TERM_CLEAR = TERM_HOME + "\x1b[2J"
-    FUZZER_NAME = "frida-fuzzer"
-    bl = max(len(str(app_name)), len(output_folder), 20)
-    bl = len("target app       : ") + bl - len("=[ %s ]=" % FUZZER_NAME)
-    bl = bl // 2 if bl % 2 == 0 else (bl +1) // 2
-    sb = " |=" + "-"*bl + ("=[ %s ]=" % FUZZER_NAME) + "-"*bl + "=|"
+    field_len = len(" target app  ")
+    half = max(len(str(app_name)), len(output_folder)) +2
+    half = len(" \u2551 target app   \u2502 ") + half - len(FUZZER_NAME)
+    half = half // 2 if half % 2 == 0 else (half +1) // 2
+    banner = " "*half + (FUZZER_NAME) + " "*half
+    boxlen = len(banner) -3
+    def pprint(s, v=""):
+        s = " " + s
+        s = s + " " * (field_len - len(s))
+        o = " \u2551" + s + "\u2502 " + str(v)
+        o += " " * ((boxlen +2) - len(o))
+        o += "\u2551"
+        print (o)
+    #print (TERM_HOME + " "*len(banner))
     print (TERM_CLEAR)
-    print (sb)
-    print ("   target app       :", app_name)
-    print ("   output folder    :", output_folder)
-    #print ("   messages         :", messages)
-    print ("   uptime           :", readable_time(t - start_time))
-    print ("   last path        :", readable_time(last_path - start_time))
-    print ("   queue size       :", queue.max_num -1)
-    print ("   last stage       :", status["stage"])
-    print ("   current testcase :", status["cur"] if status["cur"] != -1 else "<init>")
-    print ("   total executions :", status["total_execs"])
-    print ("   execution speed  : %d/sec" % (status["total_execs"] / (t - start_time)))
-    print (" |=" + "-"*(len(sb) -5) + "=|\n")
+    print (banner)
+    print (" \u2554" + "\u2550" * field_len + "\u2564" + "\u2550" * (boxlen - field_len -1) + "\u2557")
+    pprint ("target", app_name)
+    pprint ("execs", status["total_execs"])
+    pprint ("speed", "%d exec/s" % (status["total_execs"] / (t - start_time)))
+    pprint ("uptime", readable_time(t - start_time))
+    pprint ("last path", readable_time(last_path - start_time))
+    pprint ("map density", "%d %%" % status["map_rate"])
+    pprint ("current", status["cur"] if status["cur"] != -1 else "<init>")
+    pprint ("queue size", queue.max_num -1)
+    pprint ("pending fav", status["pending_fav"])
+    pprint ("last stage", status["stage"])
+    pprint ("output path", output_folder)
+    #pprint("messages", messages)
+    print (" \u255A" + "\u2550" * field_len + "\u2567" + "\u2550" * (boxlen - field_len -1) + "\u255D")
+    print ()
 
 
 def on_interesting(message, data):
@@ -332,7 +347,7 @@ def on_splice(message, data):
 
 def on_crash(message, data):
     global queue, script, session, pid
-    print ("\n"*2 + "  ************** CRASH FOUND! **************")
+    print ("\n"*2 + "  ============= CRASH FOUND! =============")
     print ("    type:", message["err"]["type"])
     if "memory" in message["err"]:
         print ("    %s at:" % message["err"]["memory"]["operation"], message["err"]["memory"]["address"])
@@ -352,7 +367,7 @@ def on_crash(message, data):
 
 def on_exception(message, data):
     global queue, script, session, pid
-    print ("\n"*2 + "  ************ EXCEPTION FOUND! ************")
+    print ("\n"*2 + "  =========== EXCEPTION FOUND! ===========")
     print ("    message:", message["err"])
     print ("")
     t = int(time.time())
@@ -375,7 +390,7 @@ def on_message(message, data):
     global messages, pid
     messages += 1
     if message["type"] == "error":
-        print (" ************** FUZZER ERROR! **************")
+        print (" ============= FUZZER ERROR! =============")
         if "lineNumber" in message:
             print ("  line %d: %s" % (message["lineNumber"], message["description"]))
         else:
@@ -438,6 +453,8 @@ else:
         p = os.path.join(args.i, fname)
         if os.path.isfile(p):
             initial.add(p)
+
+print(TERM_CLEAR, end="")
 
 start_time = int(time.time())
 

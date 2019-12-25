@@ -19,7 +19,7 @@
 exports.MAP_SIZE = 65536; // 2^16, AFL default
 //exports.MAP_SIZE = 16384; // 2^14, small APIs doesn't require a large map
 
-exports.MAX_FILE = 1024;
+exports.MAX_FILE = 102400;
 
 exports.HAVOC_STACK_POW2 = 7;
 
@@ -38,6 +38,10 @@ exports.INTERESTING_16 = [-32768, -129, 128, 255, 256, 512, 1000, 1024, 4096, 32
 exports.INTERESTING_32 = [-2147483648, -100663046, -32769, 32768, 65535, 65536, 100663045, 2147483647];
 
 exports.ARITH_MAX = 35;
+
+exports.SKIP_TO_NEW_PROB   = 99;
+exports.SKIP_NFAV_OLD_PROB = 95;
+exports.SKIP_NFAV_NEW_PROB = 75;
 
 exports.QUEUE_CACHE_MAX_SIZE = 200*1024*1024; // 200 MB
 
