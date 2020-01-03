@@ -195,6 +195,8 @@ var update_bitmap_score_loop = new NativeFunction(
 
 exports.update_bitmap_score = function (q) {
 
+  if (config.SKIP_SCORE_FAV) return;
+
   var fav_factor = q.exec_us * q.size;
   var top_rated = exports.top_rated;
   

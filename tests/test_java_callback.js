@@ -18,19 +18,24 @@ fuzz.init_callback = function () {
     });
     
     // Clone to enable traps: 'all', this is mandatory
-    var test_java_func = activity.test_java_func.clone({ traps: 'all' });
+    var test_java_func_btn = activity.test_java_func.clone({ traps: 'all' });
 
     fuzz.fuzzer_test_one_input = function (/* Uint8Array */ payload) {
 
       var str = fuzz.utils.uint8arr_to_str(payload);
       
-      test_java_func.call(activity, str);
+      test_java_func_btn.call(activity, str);
 
     }
 
-    /* Manually start loop so that we ensure to call fuzzer_test_one_input
+    /* Start the fuzzing loop when the button is clicked */
+    activity.sendMessage.implementation = function () {
+    
+      /* Manually start loop so that we ensure to call fuzzer_test_one_input
        in the Java perform context */
-    fuzz.fuzzing_loop();
+      fuzz.fuzzing_loop();
+    
+    }
 
   });
 

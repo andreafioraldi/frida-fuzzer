@@ -109,7 +109,7 @@ exports.start_tracing = function(thread_id, target_module) {
     while ((i = iterator.next()) !== null);
 
   }
-    
+
   exports.__cm = new CModule(`
 
   #include <stdint.h>

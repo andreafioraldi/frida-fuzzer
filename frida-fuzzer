@@ -386,19 +386,22 @@ def on_exception(message, data):
 def on_stats(message, data):
     status_screen(message)
 
+def report_error(message):
+    print (" ============= FUZZER ERROR! =============")
+    if "lineNumber" in message and message["lineNumber"] is not None:
+        print ("  line %d: %s" % (message["lineNumber"], message["description"]))
+    else:
+        print ("  %s" % message["description"])
+    if "stack" in message:
+        print ("  JS stacktrace:\n")
+        print (message["stack"])
+    print ("")
+
 def on_message(message, data):
     global messages, pid
     messages += 1
     if message["type"] == "error":
-        print (" ============= FUZZER ERROR! =============")
-        if "lineNumber" in message:
-            print ("  line %d: %s" % (message["lineNumber"], message["description"]))
-        else:
-            print ("  %s" % message["description"])
-        if "stack" in message:
-            print ("  JS stacktrace:\n")
-            print (message["stack"])
-        print ("")
+        report_error(message)
         if args.spawn and not args.U:
           print (" >> Killing", pid)
           os.kill(pid, signal.SIGKILL)

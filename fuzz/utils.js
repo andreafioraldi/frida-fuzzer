@@ -68,6 +68,42 @@ exports.str_to_uint8arr = function (str) {
 
 }
 
+exports.uint8arr_to_str = (function () {
+    // from https://stackoverflow.com/questions/8936984/uint8array-to-string-in-javascript
+
+    var char_cache = new Array(128);  // Preallocate the cache for the common single byte chars
+    var char_from_codept = String.fromCharCode;
+    var result = [];
+
+    return function (array) {
+        var codept, byte1;
+        var buff_len = array.length;
+
+        result.length = 0;
+
+        for (var i = 0; i < buff_len;) {
+            byte1 = array[i++];
+
+            if (byte1 <= 0x7F) {
+                codept = byte1;
+            } else if (byte1 <= 0xDF) {
+                codept = ((byte1 & 0x1F) << 6) | (array[i++] & 0x3F);
+            } else if (byte1 <= 0xEF) {
+                codept = ((byte1 & 0x0F) << 12) | ((array[i++] & 0x3F) << 6) | (array[i++] & 0x3F);
+            } else if (String.fromCodePoint) {
+                codept = ((byte1 & 0x07) << 18) | ((array[i++] & 0x3F) << 12) | ((array[i++] & 0x3F) << 6) | (array[i++] & 0x3F);
+            } else {
+                codept = 63;    // Cannot convert four byte code points, so use "?" instead
+                i += 3;
+            }
+
+            result.push(char_cache[codept] || (char_cache[codept] = char_from_codept(codept)));
+        }
+
+        return result.join('');
+    };
+})();
+
 exports.locate_diffs = function (buf1, buf2) {
 
     var a = new Uint8Array(buf1);

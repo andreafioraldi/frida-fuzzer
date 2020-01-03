@@ -16,8 +16,8 @@
 
  */
 
-exports.MAP_SIZE = 65536; // 2^16, AFL default
-//exports.MAP_SIZE = 16384; // 2^14, small APIs doesn't require a large map
+//exports.MAP_SIZE = 65536; // 2^16, AFL default
+exports.MAP_SIZE = 16384; // 2^14, small APIs doesn't require a large map
 
 exports.MAX_FILE = 102400;
 
@@ -42,6 +42,8 @@ exports.ARITH_MAX = 35;
 exports.SKIP_TO_NEW_PROB   = 99;
 exports.SKIP_NFAV_OLD_PROB = 95;
 exports.SKIP_NFAV_NEW_PROB = 75;
+
+exports.SKIP_SCORE_FAV = false; // The favorite testcases scoring, slowdown the fuzzer but make also it more effective
 
 exports.QUEUE_CACHE_MAX_SIZE = 200*1024*1024; // 200 MB
 
