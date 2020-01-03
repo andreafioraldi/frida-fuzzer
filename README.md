@@ -8,14 +8,11 @@ This experimetal fuzzer is meant to be used for API in-memory fuzzing.
 
 The desing is highly inspired and based on AFL/AFL++.
 
-ATM the mutator is quite simple, just the AFL's havoc and splice stages and the seed selection
-is simply FIFO (no favored paths, no trimming, no extra features).
-Obviously these features are planned, if you want to contribute adding them PR
-are well accepted.
+ATM the mutator is quite simple, just the AFL's havoc and splice stages.
 
-I tested only on the two examples under tests/, this is a WIP project but is know to works at least on GNU/Linux x86_64 and Android x86_64.
+I tested only on the examples under tests/, this is a WIP project but is know to works at least on GNU/Linux x86_64 and Android x86_64.
 
-You need Frida >= 12.8.1 to run this (`pip3 install -U frida`) and frida-tools to compile harness.
+You need Frida >= 12.8.1 to run this (`pip3 install -U frida`) and frida-tools to compile the harness.
 
 ## Usage
 
@@ -148,7 +145,8 @@ Hey OSS community, there are a lot of TODOs if someone wants to contribute.
 + ~~splice stage (merge two testcase in queue and apply havoc on it)~~
 + inlined istrumentation for x86, arm and arm64 (x86_64 is the only inlined atm)
 + ~~support dictionaries (and so modify also havoc)~~
-+ seed selection and performance scoring (explore schedule of AFL)
++ ~~seed selection~~
++ performance scoring (explore schedule of AFL)
 + structural mutator (mutate bytes based on a grammar written in JSON)
 + CompareCoverage (sub-instruction profiling to bypass fuzzing roadblocks)
 + rewrite frida-fuzzer in C with frida-core to be able to run all the stuffs on the mobile device
