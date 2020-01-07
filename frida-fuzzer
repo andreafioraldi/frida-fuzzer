@@ -29,6 +29,11 @@ import signal
 import argparse
 import tempfile
 import random
+if os.path.exists("env.py"):
+    import env as _env
+    env = _env.env
+else:
+    env = None
 
 TERM_HOME = "\x1b[H"
 TERM_CLEAR = TERM_HOME + "\x1b[2J"
@@ -83,16 +88,16 @@ with open(args.script) as f:
 if args.U:
     device = frida.get_usb_device()
     if args.spawn:
-        pid = device.spawn(args.target)
+        pid = device.spawn(args.target, env=env)
         session = device.attach(pid)
     else:
         session = device.attach(app_name)
 else:
     if args.spawn:
         if os.getenv("FRIDA_FUZZER_CHILD_OUT"):
-            pid = frida.spawn(args.target)
+            pid = frida.spawn(args.target, env=env)
         else:
-            pid = frida.spawn(args.target, stdio="pipe")
+            pid = frida.spawn(args.target, stdio="pipe", env=env)
         session = frida.attach(pid)
     else:
         session = frida.attach(app_name)
