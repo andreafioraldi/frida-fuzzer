@@ -82,6 +82,8 @@ exports.fuzzing_loop = function () {
       payload = new Uint8Array(arr_buf.transfer(arr_buf, config.MAX_FILE));
     else
       payload = new Uint8Array(arr_buf);
+    
+    // console.log(payload)
 
     exports.fuzzer_test_one_input(payload);
 

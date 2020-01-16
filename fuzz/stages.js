@@ -69,7 +69,20 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
   }
 
   var ts_1 = (new Date()).getTime();
+
   var exec_ms = ts_1 - ts_0;
+  if (exec_ms > config.TIMEOUT) {
+    send({
+      "event": "crash",
+      "err": {"type": "timeout"},
+      "stage": exports.stage_name,
+      "cur": queue.cur_idx,
+      "total_execs": exports.total_execs,
+      "pending_fav": queue.pending_favored,
+      "map_rate": bitmap.map_rate,
+    }, buf);
+    throw "timeout";
+  }
   
   bitmap.classify_counts(bitmap.trace_bits, bitmap.count_class_lookup16);
   
@@ -135,6 +148,15 @@ exports.dry_run = function (callback) {
     }
 
   }
+
+  send({
+    "event": "status",
+    "stage": exports.stage_name,
+    "cur": queue.cur_idx,
+    "total_execs": exports.total_execs,
+    "pending_fav": queue.pending_favored,
+    "map_rate": bitmap.map_rate,
+  });
 
 }
 

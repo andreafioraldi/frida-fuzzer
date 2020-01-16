@@ -479,8 +479,10 @@ last_path = start_time
 
 try:
     script.exports.loop()
-except frida.InvalidOperationError as e:
-    print (e)
+except (frida.core.RPCException, frida.InvalidOperationError) as e:
+    try:
+        print (e)
+    except: pass
     exit (1)
 
 sys.stdin.read()
