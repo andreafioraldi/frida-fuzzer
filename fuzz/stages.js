@@ -69,14 +69,14 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
   }
 
   var ts_1 = (new Date()).getTime();
-  var exec_us = ts_1 - ts_0;
+  var exec_ms = ts_1 - ts_0;
   
   bitmap.classify_counts(bitmap.trace_bits, bitmap.count_class_lookup16);
   
-  exports.exec_speed = exec_us;
+  exports.exec_speed = exec_ms;
   ++exports.total_execs;
   
-  if (bitmap.save_if_interesting(buf, exec_us)) {
+  if (bitmap.save_if_interesting(buf, exec_ms)) {
   
     if ((ts_1 - last_status_ts) > config.UPDATE_TIME) {
       last_status_ts = ts_1;
@@ -90,7 +90,7 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
       });
     }
     
-    return exec_us; // return exec_us when not saved
+    return exec_ms; // return exec_ms when not saved
       
   }
   
@@ -126,10 +126,10 @@ exports.dry_run = function (callback) {
     op.wait();
     if (buf === null) break;
     
-    var exec_us = common_fuzz_stuff(buf, callback);
-    if (exec_us !== null) { // always save initial seeds
+    var exec_ms = common_fuzz_stuff(buf, callback);
+    if (exec_ms !== null) { // always save initial seeds
     
-      queue.add(buf, exec_us, false);
+      queue.add(buf, exec_ms, false);
       bitmap.update_bitmap_score(queue.last());
 
     }

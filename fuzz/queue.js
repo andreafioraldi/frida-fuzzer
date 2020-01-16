@@ -25,7 +25,7 @@ var stages = require("./stages.js");
   u8* buf;
   u8* trace_mini;
   u32 size;
-  u32 exec_us;
+  u32 exec_ms;
   u32 tc_ref;
   u8 favored;
   u8 was_fuzzed;
@@ -33,13 +33,13 @@ var stages = require("./stages.js");
 var QENTRY_FIELD_BUF = 0;
 var QENTRY_FIELD_TRACE_MINI = QENTRY_FIELD_BUF + Process.pointerSize;
 var QENTRY_FIELD_SIZE = QENTRY_FIELD_TRACE_MINI + Process.pointerSize;
-var QENTRY_FIELD_EXEC_US = QENTRY_FIELD_SIZE + 4;
-var QENTRY_FIELD_TC_REF = QENTRY_FIELD_EXEC_US + 4;
+var QENTRY_FIELD_EXEC_MS = QENTRY_FIELD_SIZE + 4;
+var QENTRY_FIELD_TC_REF = QENTRY_FIELD_EXEC_MS + 4;
 var QENTRY_FIELD_FAVORED = QENTRY_FIELD_TC_REF + 4;
 var QENTRY_FIELD_WAS_FUZZED = QENTRY_FIELD_FAVORED + 1;
 var QENTRY_BYTES = ((QENTRY_FIELD_WAS_FUZZED + 1) + 7) & (-8);
 
-function QEntry(buf, size, exec_us) {
+function QEntry(buf, size, exec_ms) {
 
   var _ptr = Memory.alloc(QENTRY_BYTES);
   this.ptr = _ptr;
@@ -65,11 +65,11 @@ function QEntry(buf, size, exec_us) {
     set size(val) {
       _ptr.add(QENTRY_FIELD_SIZE).writeU32(val);
     },
-    get exec_us() {
-      return _ptr.add(QENTRY_FIELD_EXEC_US).readU32();
+    get exec_ms() {
+      return _ptr.add(QENTRY_FIELD_EXEC_MS).readU32();
     },
-    set exec_us(val) {
-      _ptr.add(QENTRY_FIELD_EXEC_US).writeU32(val);
+    set exec_ms(val) {
+      _ptr.add(QENTRY_FIELD_EXEC_MS).writeU32(val);
     },
     get tc_ref() {
       return _ptr.add(QENTRY_FIELD_TC_REF).readU32();
@@ -107,7 +107,7 @@ function QEntry(buf, size, exec_us) {
 
   props.buf = buf;
   props.size = size;
-  props.exec_us = exec_us;
+  props.exec_ms = exec_ms;
   props.favored = false;
   props.was_fuzzed = false;
   // You should never touch trace_mini, see update_bitmap_score_body
@@ -256,11 +256,11 @@ function prune_memory() {
 
 }
 
-exports.add = function (/* ArrayBuffer */ buf, exec_us, has_new_cov) {
+exports.add = function (/* ArrayBuffer */ buf, exec_ms, has_new_cov) {
 
   if (buf.byteLength >= config.QUEUE_CACHE_MAX_SIZE) {
     
-    queue.push(new QEntry(ptr(0), buf.byteLength, exec_us));
+    queue.push(new QEntry(ptr(0), buf.byteLength, exec_ms));
     
   } else {
 
@@ -272,9 +272,9 @@ exports.add = function (/* ArrayBuffer */ buf, exec_us, has_new_cov) {
     if (bytes_size >= config.QUEUE_CACHE_MAX_SIZE) {
       // prune_memory was ineffective
       bytes_size -= buf.byteLength;
-      queue.push(new QEntry(ptr(0), buf.byteLength, exec_us));
+      queue.push(new QEntry(ptr(0), buf.byteLength, exec_ms));
     } else {
-      queue.push(new QEntry(buf.slice(0), buf.byteLength, exec_us));
+      queue.push(new QEntry(buf.slice(0), buf.byteLength, exec_ms));
     }
 
   }
@@ -282,7 +282,7 @@ exports.add = function (/* ArrayBuffer */ buf, exec_us, has_new_cov) {
   send({
     "event": "interesting",
     "num": (queue.length -1),
-    "exec_us": exec_us,
+    "exec_ms": exec_ms,
     "new_cov": has_new_cov,
     "stage": stages.stage_name,
     "cur": exports.cur_idx,
@@ -371,7 +371,7 @@ struct __attribute__((packed)) QEntry {
   u8* buf;
   u8* trace_mini;
   u32 size;
-  u32 exec_us;
+  u32 exec_ms;
   u32 tc_ref;
   u8 favored;
   u8 was_fuzzed;

@@ -77,7 +77,7 @@ struct __attribute__((packed)) QEntry {
   u8* buf;
   u8* trace_mini;
   u32 size;
-  u32 exec_us;
+  u32 exec_ms;
   u32 tc_ref;
   u8 favored;
   u8 was_fuzzed;
@@ -164,7 +164,7 @@ static void minimize_bits(u8* dst, u8* src) {
 
 s32 update_bitmap_score_body(struct QEntry* q, struct QEntry** top_rated, u8* trace_bits, u8* virgin_bits) {
 
-  u32 fav_factor = q->exec_us * q->size;
+  u32 fav_factor = q->exec_ms * q->size;
   s32 cnt = 0;
   u8 score_changed = 0;
   u32 i;
@@ -177,7 +177,7 @@ s32 update_bitmap_score_body(struct QEntry* q, struct QEntry** top_rated, u8* tr
 
         /* Faster-executing or smaller test cases are favored. */
   
-        if (fav_factor > top_rated[i]->exec_us * top_rated[i]->size)
+        if (fav_factor > top_rated[i]->exec_ms * top_rated[i]->size)
           continue;
   
         if (!--top_rated[i]->tc_ref) {
@@ -249,13 +249,13 @@ exports.update_bitmap_score = function (q) {
 
 }
 
-exports.save_if_interesting = function (buf, exec_us) {
+exports.save_if_interesting = function (buf, exec_ms) {
   
   var hnb = exports.has_new_bits(exports.trace_bits, exports.virgin_bits);
   if (hnb == 0)
     return true;
   
-  queue.add(buf, exec_us, (hnb == 2));
+  queue.add(buf, exec_ms, (hnb == 2));
   exports.update_bitmap_score(queue.last());
 
   return false;  

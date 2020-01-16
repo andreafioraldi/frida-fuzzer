@@ -21,7 +21,6 @@ __version__ = "1.3"
 
 import frida
 import base64
-import time
 import os
 import sys
 import time
@@ -41,6 +40,16 @@ UNINFORMED_SEED = b"0" * 4
 DESCR = """Frida Android API Fuzzer [%s]
 Copyright (C) 2019 Andrea Fioraldi <andreafioraldi@gmail.com>
 """ % __version__
+
+def readable_time(t):
+    t /= 1000 # ms
+    h = t // 60 // 60
+    m = t // 60 - h * 60
+    s = t - m * 60 - h * 60 * 60
+    return "%dh-%dm-%ds" % (h, m, s)
+
+def get_cur_time(): # ms
+    return int(round(time.time() * 1000))
 
 opt = argparse.ArgumentParser(description=DESCR, formatter_class=argparse.RawTextHelpFormatter)
 opt.add_argument("-i", action="store", help="Folder with initial seeds")
@@ -99,6 +108,14 @@ else:
 
 script = session.create_script(code, runtime="v8")
 
+last_path = 0
+start_time = 0
+last_execs = None
+last_ms = 0
+eps = 0
+
+messages = 0
+
 def locate_diffs(a, b):
     f_loc = None
     l_loc = None
@@ -114,7 +131,7 @@ class QEntry(object):
         self.size = 0
         self.num = 0
         self.was_fuzzed = False
-        self.exec_us = 0
+        self.exec_ms = 0
         self.time = 0
         self.new_cov = False
         self.next = None
@@ -128,15 +145,15 @@ class Queue(object):
         # use a dict for fast lookup by num
         self.dict = {}
 
-    def add(self, buf, exec_us, new_cov, stage, num):
+    def add(self, buf, exec_ms, new_cov, stage, num):
         q = QEntry()
         q.filename = os.path.join(output_folder, "id_%d_%s" % (num, stage))
         if new_cov:
             q.filename += "_cov"
         q.num = num
-        q.exec_us = exec_us
+        q.exec_ms = exec_ms
         q.new_cov = new_cov
-        q.time = int(time.time())
+        q.time = get_cur_time()
         q.size = len(buf)
         with open(q.filename, "wb") as f:
             f.write(buf)
@@ -218,21 +235,25 @@ class InitialQueue(object):
 
 initial = InitialQueue()
 queue = Queue()
-start_time = 0
-last_path = 0
-
-messages = 0
-
-def readable_time(t):
-    h = t // 60 // 60
-    m = t // 60 - h * 60
-    s = t - m * 60 - h * 60 * 60
-    return "%dh-%dm-%ds" % (h, m, s)
 
 def status_screen(status):
-    global queue, app_name, messages
+    global queue, app_name, messages, last_execs, last_ms, eps
     #return
-    t = time.time()
+
+    cur_ms = get_cur_time()
+    if cur_ms - last_ms < 200:
+        return
+    eps_total = float(status["total_execs"]) * 1000 / (cur_ms - start_time)
+    if last_execs == None:
+        eps = eps_total
+    else:
+        cur_eps = float(status["total_execs"] - last_execs) * 1000 / (cur_ms - last_ms)
+        if cur_eps * 5 < eps or cur_eps / 5 > eps:
+            eps = cur_eps;
+        eps = eps * (1.0 - 1.0 / 16) + cur_eps * (1.0 / 16)
+    last_execs = status["total_execs"]
+    last_ms = cur_ms
+
     field_len = len(" target app  ")
     half = max(len(str(app_name)), len(output_folder)) +2
     half = len(" \u2551 target app   \u2502 ") + half - len(FUZZER_NAME)
@@ -250,10 +271,12 @@ def status_screen(status):
     print (TERM_CLEAR)
     print (banner)
     print (" \u2554" + "\u2550" * field_len + "\u2564" + "\u2550" * (boxlen - field_len -1) + "\u2557")
+
     pprint ("target", app_name)
     pprint ("execs", status["total_execs"])
-    pprint ("speed", "%d exec/s" % (status["total_execs"] / (t - start_time)))
-    pprint ("uptime", readable_time(t - start_time))
+    #pprint ("speed", "%d (%d) exec/s" % (int(eps), int(eps_total)))
+    pprint ("speed", "%d exec/s" % int(eps))
+    pprint ("uptime", readable_time(cur_ms - start_time))
     pprint ("last path", readable_time(last_path - start_time))
     pprint ("map density", "%d %%" % status["map_rate"])
     pprint ("current", status["cur"] if status["cur"] != -1 else "<init>")
@@ -262,18 +285,19 @@ def status_screen(status):
     pprint ("last stage", status["stage"])
     pprint ("output path", output_folder)
     #pprint("messages", messages)
+
     print (" \u255A" + "\u2550" * field_len + "\u2567" + "\u2550" * (boxlen - field_len -1) + "\u255D")
     print ()
 
 
 def on_interesting(message, data):
     global queue, last_path
-    exec_us = message["exec_us"]
+    exec_ms = message["exec_ms"]
     new_cov = message["new_cov"]
     stage = message["stage"]
     num = message["num"]
-    last_path = time.time()
-    queue.add(data, exec_us, new_cov, stage, num)
+    last_path = get_cur_time()
+    queue.add(data, exec_ms, new_cov, stage, num)
 
 '''
 def on_next(message, data): # dead code ATM
@@ -459,7 +483,7 @@ else:
 
 print(TERM_CLEAR, end="")
 
-start_time = int(time.time())
+start_time = get_cur_time()
 
 last_path = start_time
 
