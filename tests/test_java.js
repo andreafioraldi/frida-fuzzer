@@ -1,5 +1,7 @@
 var fuzz = require("../fuzz");
 
+// Actually Java fuzzing is WIP, works only of the target module is AOT compiled
+
 // To start the fuzzing loop manually when Java is avaiable
 fuzz.manual_loop_start = true;
 
