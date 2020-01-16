@@ -238,13 +238,13 @@ var update_bitmap_score_body = new NativeFunction(
 exports.update_bitmap_score = function (q) {
 
   if (config.SKIP_SCORE_FAV) return;
-  console.log("UPDATE "+q.ptr)
+
   var cnt = update_bitmap_score_body(q.ptr, exports.top_rated, exports.trace_bits, exports.virgin_bits);
   if (cnt < 0) {
     exports.score_changed = true;
     cnt = -cnt;
   }
-  console.log("UPDATE DONE")
+
   exports.map_rate = cnt * 100 / config.MAP_SIZE;
 
 }

@@ -43,9 +43,9 @@ function QEntry(buf, size, exec_us) {
 
   var _ptr = Memory.alloc(QENTRY_BYTES);
   this.ptr = _ptr;
-  
+
   // Beware! Assigning buf does not maintaint the reference, the caller must hold it
-  Object.assign(this, {
+  var props = {
 
     get buf() { 
       return _ptr.readPointer();
@@ -92,7 +92,7 @@ function QEntry(buf, size, exec_us) {
       _ptr.add(QENTRY_FIELD_WAS_FUZZED).writeU32(val);
     },
 
-  });
+  };
 
   if (buf instanceof Uint8Array)
     buf = buf.buffer;
@@ -105,14 +105,16 @@ function QEntry(buf, size, exec_us) {
     throw "Invalid type for buf";
   }
 
-  this.buf = buf;
-  this.size = size;
-  this.exec_us = exec_us;
-  this.favored = false;
-  this.was_fuzzed = false;
+  props.buf = buf;
+  props.size = size;
+  props.exec_us = exec_us;
+  props.favored = false;
+  props.was_fuzzed = false;
   // You should never touch trace_mini, see update_bitmap_score_body
-  this.trace_mini = ptr(0);
-  this.tc_ref = 0;
+  props.trace_mini = ptr(0);
+  props.tc_ref = 0;
+
+  Object.assign(this, props);
 
 }
 
@@ -376,9 +378,8 @@ struct __attribute__((packed)) QEntry {
 
 };
 
-u32 cull_body(struct QEntry** top_rated) {
+u32 cull_body(struct QEntry** top_rated, u8* temp_v) {
 
-  u8* temp_v = (u8*)(__TEMP_V__);
   u32 pending_favored = 0;
   
   u32 i;
@@ -417,13 +418,12 @@ u32 cull_body(struct QEntry** top_rated) {
 }
 
 `.replace("__MAP_SIZE__", ""+config.MAP_SIZE)
- .replace("__TEMP_V__", temp_v.toString())
 );
 
 var cull_body = new NativeFunction(
   exports.__cm.cull_body,
   "uint",
-  ["pointer"]
+  ["pointer", "pointer"]
 );
 
 exports.cull = function () {
@@ -434,8 +434,7 @@ exports.cull = function () {
   for (var i = 0; i < queue.length; ++i)
     queue[i].favored = 0;
 
-  console.log("CULL")
-  exports.pending_favored = cull_body(bitmap.top_rated);
-  console.log("CULL DONE")
+  exports.pending_favored = cull_body(bitmap.top_rated, temp_v);
 
 }
+

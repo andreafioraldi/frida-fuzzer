@@ -77,26 +77,19 @@ exports.fuzzing_loop = function () {
   var payload = null; // Uint8Array
 
   function runner(/* ArrayBuffer */ arr_buf) {
-
-     console.log(queue.cur_idx);
   
-    payload = new Uint8Array(arr_buf);
-    console.log(payload)
-    if (payload.length > config.MAX_FILE)
-      payload = payload.slice(0, config.MAX_FILE);
-
-    console.log(payload)
+    if (arr_buf.byteLength > config.MAX_FILE)
+      payload = new Uint8Array(arr_buf.transfer(arr_buf, config.MAX_FILE));
+    else
+      payload = new Uint8Array(arr_buf);
 
     exports.fuzzer_test_one_input(payload);
-
-    console.log("--------------")
 
   }
   
   normalize_dict();
   
   Process.setExceptionHandler(function (details) {
-    console.log("CRASH HANDLER")
     send({
       "event": "crash",
       "err": details,
@@ -141,7 +134,7 @@ exports.fuzzing_loop = function () {
 
     }
     
-    bitmap.update_bitmap_score(queue.cur);
+    // bitmap.update_bitmap_score(queue.cur);
 
     for(var stage of exports.stages_list)
       stage(buf, runner);

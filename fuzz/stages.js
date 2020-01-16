@@ -43,7 +43,7 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
   try {
     callback(buf);
   } catch (err) {
-    console.log(err.stack)
+    // console.log(err.stack)
     if (err.type !== undefined) {
       send({
         "event": "crash",
