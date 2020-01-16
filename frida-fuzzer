@@ -201,22 +201,13 @@ class Queue(object):
         return buf[:split_at] + new_buf[split_at:]
         
 
-# TODO do not use this for initial_queue, and don't use QEntry at all for initial seeds
-class InitialQueue(object):
+class InitialSeeds(object):
     def __init__(self):
-        self.start = None
-        self.cur = None
-        self.top = None
+        self.idx = 0
+        self.seeds = []
 
     def add(self, filename):
-        q = QEntry()
-        q.filename = filename
-        if self.top:
-            self.top.next = q
-            self.top = q
-        else:
-            self.start = q
-            self.top = q
+        self.seeds.append(filename)
     
     def uninformed(self):
         filename = os.path.join(output_folder, "uninformed")
@@ -225,15 +216,14 @@ class InitialQueue(object):
         self.add(filename)
     
     def get(self):
-        if self.cur is None:
-            self.cur = self.start
-        else:
-            q = self.cur.next
-            self.cur = q
-        return self.cur
+        if self.idx < len(self.seeds):
+            r = self.seeds[self.idx]
+            self.idx += 1
+            return r
+        return None
 
 
-initial = InitialQueue()
+initial = InitialSeeds()
 queue = Queue()
 
 def status_screen(status):
@@ -315,19 +305,19 @@ def on_next(message, data): # dead code ATM
 
 def on_dry(message, data):
     global initial
-    q = initial.get()
-    if q is None:
+    fname = initial.get()
+    if fname is None:
         script.post({
           "type": "input",
           "buf": None,
         })
     else:
-        print (" >> Dry run", q.filename)
-        with open(q.filename, "rb") as f:
+        print (" >> Dry run", fname)
+        with open(fname, "rb") as f:
             buf = f.read()
         script.post({
           "type": "input",
-          "num": q.num,
+          "num": initial.idx -1,
           "buf": buf.hex(),
         })
 
