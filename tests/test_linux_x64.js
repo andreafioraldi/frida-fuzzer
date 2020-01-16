@@ -14,7 +14,9 @@ var payload_mem = Memory.alloc(fuzz.config.MAX_FILE);
 
 fuzz.fuzzer_test_one_input = function (/* Uint8Array */ payload) {
 
-  Memory.writeByteArray(payload_mem, payload, payload.length);
+  //Memory.writeByteArray(payload_mem, payload, payload.length);
+  payload_mem = payload.buffer.unwrap();
+  console.log(payload_mem)
 
   func_handle(payload_mem, payload.length);
 

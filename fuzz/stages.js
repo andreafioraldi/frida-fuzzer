@@ -19,9 +19,17 @@
 var config  = require("./config.js");
 var mutator = require("./mutator.js");
 var utils = require("./utils.js");
-var state = require("./state.js");
 var bitmap = require("./bitmap.js");
 var queue = require("./queue.js");
+
+exports.stage_name = "init";
+exports.stage_cur  = 0;
+exports.stage_max  = 0;
+
+exports.total_execs = 0;
+exports.exec_speed = 0;
+
+exports.splice_cycle = 0;
 
 var zeroed_bits = new Uint8Array(config.MAP_SIZE); // TODO memset(..., 0, ...)
 var last_status_ts = 0;
@@ -35,14 +43,14 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
   try {
     callback(buf);
   } catch (err) {
-    //console.log(err.stack)
+    console.log(err.stack)
     if (err.type !== undefined) {
       send({
         "event": "crash",
         "err": err,
-        "stage": state.stage_name,
+        "stage": exports.stage_name,
         "cur": queue.cur_idx,
-        "total_execs": state.total_execs,
+        "total_execs": exports.total_execs,
         "pending_fav": queue.pending_favored,
         "map_rate": bitmap.map_rate,
       }, buf);
@@ -50,9 +58,9 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
       send({
         "event": "exception",
         "err": err.message,
-        "stage": state.stage_name,
+        "stage": exports.stage_name,
         "cur": queue.cur_idx,
-        "total_execs": state.total_execs,
+        "total_execs": exports.total_execs,
         "pending_fav": queue.pending_favored,
         "map_rate": bitmap.map_rate,
       }, buf);
@@ -65,8 +73,8 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
   
   bitmap.classify_counts(bitmap.trace_bits, bitmap.count_class_lookup16);
   
-  state.exec_speed = exec_us;
-  ++state.total_execs;
+  exports.exec_speed = exec_us;
+  ++exports.total_execs;
   
   if (bitmap.save_if_interesting(buf, exec_us)) {
   
@@ -74,9 +82,9 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
       last_status_ts = ts_1;
       send({
         "event": "status",
-        "stage": state.stage_name,
+        "stage": exports.stage_name,
         "cur": queue.cur_idx,
-        "total_execs": state.total_execs,
+        "total_execs": exports.total_execs,
         "pending_fav": queue.pending_favored,
         "map_rate": bitmap.map_rate,
       });
@@ -99,9 +107,9 @@ exports.dry_run = function (callback) {
 
     send({
       "event": "dry",
-      "stage": state.stage_name,
+      "stage": exports.stage_name,
       "cur": queue.cur_idx,
-      "total_execs": state.total_execs,
+      "total_execs": exports.total_execs,
       "pending_fav": queue.pending_favored,
       "map_rate": bitmap.map_rate,
     });
@@ -112,7 +120,7 @@ exports.dry_run = function (callback) {
         return;
       }
       buf = utils.hex_to_arrbuf(val.buf);
-      state.queue_cur = val.num;
+      exports.queue_cur = val.num;
     });
 
     op.wait();
@@ -134,15 +142,15 @@ exports.dry_run = function (callback) {
 function fuzz_havoc(/* ArrayBuffer */ buf, callback, is_splice) {
 
   if (!is_splice)  {
-    state.stage_name = "havoc";
-    state.stage_max = config.HAVOC_CYCLES * 40; // TODO perf_score & co
+    exports.stage_name = "havoc";
+    exports.stage_max = config.HAVOC_CYCLES * 40; // TODO perf_score & co
   } else {
-    state.stage_name = "splice-" + state.splice_cycle;
-    state.stage_max = config.SPLICE_HAVOC * 40; // TODO perf_score & co
+    exports.stage_name = "splice-" + exports.splice_cycle;
+    exports.stage_max = config.SPLICE_HAVOC * 40; // TODO perf_score & co
   }
 
-  for (state.stage_cur = 0; state.stage_cur < state.stage_max;
-       state.stage_cur++) {
+  for (exports.stage_cur = 0; exports.stage_cur < exports.stage_max;
+       exports.stage_cur++) {
 
     var muted = buf.slice(0);
     muted = mutator.mutate_havoc(muted);
@@ -161,11 +169,11 @@ exports.havoc_stage = function (/* ArrayBuffer */ buf, callback) {
 
 exports.splice_stage = function (/* ArrayBuffer */ buf, callback) {
 
-  state.splice_cycle = 0;
+  exports.splice_cycle = 0;
 
   if (buf.byteLength <= 1 || queue.size() <= 1) return;
 
-  while (state.splice_cycle < config.SPLICE_CYCLES) {
+  while (exports.splice_cycle < config.SPLICE_CYCLES) {
 
     var new_buf = queue.splice_target(buf);
 

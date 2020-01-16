@@ -16,22 +16,20 @@
 
  */
 
+var queue = require("./queue.js");
 var stages = require("./stages.js");
 var config = require("./config.js");
 var mutator = require("./mutator.js");
 var instr = require("./instrumentor.js");
 var bitmap = require("./bitmap.js");
-var queue = require("./queue.js");
-var state = require("./state.js");
 var utils = require("./utils.js");
 
+exports.queue = queue;
 exports.stages = stages;
 exports.config = config;
 exports.mutator = mutator;
 exports.instr = instr;
 exports.bitmap = bitmap;
-exports.queue = queue;
-exports.state = state;
 exports.utils = utils;
 
 /* Define this to exclude other modules from instrumentation */
@@ -79,24 +77,32 @@ exports.fuzzing_loop = function () {
   var payload = null; // Uint8Array
 
   function runner(/* ArrayBuffer */ arr_buf) {
-    
+
+     console.log(queue.cur_idx);
+  
     payload = new Uint8Array(arr_buf);
+    console.log(payload)
     if (payload.length > config.MAX_FILE)
       payload = payload.slice(0, config.MAX_FILE);
 
+    console.log(payload)
+
     exports.fuzzer_test_one_input(payload);
+
+    console.log("--------------")
 
   }
   
   normalize_dict();
   
   Process.setExceptionHandler(function (details) {
+    console.log("CRASH HANDLER")
     send({
       "event": "crash",
       "err": details,
-      "stage": state.stage_name,
+      "stage": stages.stage_name,
       "cur": queue.cur_idx,
-      "total_execs": state.total_execs,
+      "total_execs": stages.total_execs,
       "pending_fav": queue.pending_favored,
       "map_rate": bitmap.map_rate,
     }, payload);
@@ -135,7 +141,7 @@ exports.fuzzing_loop = function () {
 
     }
     
-    // bitmap.update_bitmap_score(queue.cur);
+    bitmap.update_bitmap_score(queue.cur);
 
     for(var stage of exports.stages_list)
       stage(buf, runner);

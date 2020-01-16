@@ -17,7 +17,7 @@
 
 """
 
-__version__ = "1.2"
+__version__ = "1.3"
 
 import frida
 import base64
@@ -247,7 +247,7 @@ def status_screen(status):
         o += "\u2551"
         print (o)
     #print (TERM_HOME + " "*len(banner))
-    print (TERM_CLEAR)
+    #print (TERM_CLEAR)
     print (banner)
     print (" \u2554" + "\u2550" * field_len + "\u2564" + "\u2550" * (boxlen - field_len -1) + "\u2557")
     pprint ("target", app_name)
