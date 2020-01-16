@@ -38,7 +38,7 @@ SPLICE_CYCLES = 15 # warning: must be consistent wiht config.js!
 
 UNINFORMED_SEED = b"0" * 4
 
-DESCR = """Frida Android API Fuzzer [%s]
+DESCR = """Frida API Fuzzer [%s]
 Copyright (C) 2019 Andrea Fioraldi <andreafioraldi@gmail.com>
 """ % __version__
 
