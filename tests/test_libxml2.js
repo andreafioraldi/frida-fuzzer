@@ -32,13 +32,11 @@ var xmlReadMemory = new NativeFunction(xmlReadMemory_addr, "pointer",
 var xmlFreeDoc_addr = DebugSymbol.fromName("xmlFreeDoc").address;
 var xmlFreeDoc = new NativeFunction(xmlFreeDoc_addr, "void", ["pointer"]);
 
-var payload_mem = Memory.alloc(fuzz.config.MAX_FILE);
-
 var name = Memory.allocUtf8String("noname.xml");
 
 fuzz.fuzzer_test_one_input = function (/* Uint8Array */ payload) {
 
-  Memory.writeByteArray(payload_mem, payload, payload.length);
+  var payload_mem = payload.buffer.unwrap();
 
   var r = xmlReadMemory(payload_mem, payload.length, name, ptr(0), 0);
   if (!r.isNull())
