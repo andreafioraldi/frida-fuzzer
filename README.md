@@ -143,7 +143,7 @@ Hey OSS community, there are a lot of TODOs if someone wants to contribute.
 
 + ~~Java code fuzzing (waiting for additional exposed methods in frida-java-bridge, should be easy, almost done)~~
 + ~~splice stage (merge two testcase in queue and apply havoc on it)~~
-+ inlined istrumentation for x86, arm and arm64 (x86_64 is the only inlined atm)
++ inlined istrumentation for arm64
 + ~~support dictionaries (and so modify also havoc)~~
 + ~~seed selection~~
 + performance scoring (explore schedule of AFL)
