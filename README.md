@@ -1,16 +1,16 @@
 # Frida API Fuzzer
 
-> v1.3 Copyright (C) 2019 Andrea Fioraldi <andreafioraldi@gmail.com>
+> v1.3 Copyright (C) 2020 Andrea Fioraldi <andreafioraldi@gmail.com>
 > 
 > Released under the Apache License v2.0
 
-This experimetal fuzzer is meant to be used for API in-memory fuzzing.
+This experimental fuzzer is meant to be used for API in-memory fuzzing.
 
-The desing is highly inspired and based on AFL/AFL++.
+The design is highly inspired and based on AFL/AFL++.
 
 ATM the mutator is quite simple, just the AFL's havoc and splice stages.
 
-I tested only on the examples under tests/, this is a WIP project but is know to works at least on GNU/Linux x86_64 and Android x86_64.
+I tested only the examples under tests/, this is a WIP project but is known to works at least on GNU/Linux x86_64 and Android x86_64.
 
 You need Frida >= 12.8.1 to run this (`pip3 install -U frida`) and frida-tools to compile the harness.
 
@@ -20,7 +20,7 @@ The `fuzz` library has to be imported into a custom harness and then compiled wi
 
 The majority of the logic of the fuzzer is in the agent.
 
-An harness has the following format:
+A harness has the following format:
 
 ```js
 var fuzz = require("./fuzz");
@@ -94,9 +94,9 @@ The variables that you may want to change are MAP_SIZE (If the code that you are
 
 ## Example
 
-Let's fuzz the native shared library into the example Android app in `tests`.
+Let's fuzz the native shared library in the example Android app in `tests`.
 
-Make sure to have root on your virtual device:
+Make sure you have root on your virtual device:
 
 ```
 host$ adb root
@@ -131,7 +131,7 @@ with the command:
 host$ ./frida-fuzzer -U -o output_folder/ com.example.ndktest1
 ```
 
-Both interesting testcases and crashes are saved into output_folder.
+Interesting testcases and crashes are both saved into output_folder.
 
 Enjoy.
 
@@ -143,13 +143,13 @@ Hey OSS community, there are a lot of TODOs if someone wants to contribute.
 
 + ~~Java code fuzzing (waiting for additional exposed methods in frida-java-bridge, should be easy, almost done)~~
 + ~~splice stage (merge two testcase in queue and apply havoc on it)~~
-+ inlined istrumentation for arm64
 + ~~support dictionaries (and so modify also havoc)~~
 + ~~seed selection~~
++ inlined instrumentation for arm64
 + performance scoring (explore schedule of AFL)
 + structural mutator (mutate bytes based on a grammar written in JSON)
 + CompareCoverage (sub-instruction profiling to bypass fuzzing roadblocks)
-+ rewrite frida-fuzzer in C with frida-core to be able to run all the stuffs on the mobile device
++ rewrite frida-fuzzer in C with frida-core to be able to run all stuff on the mobile device
 
 If you have doubt on one of this featues feel free to DM me on [Twitter](https://twitter.com/andreafioraldi).
 
