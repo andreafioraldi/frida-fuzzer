@@ -70,6 +70,12 @@ function normalize_dict () {
 
 exports.fuzzing_loop = function () {
 
+  if (!ArrayBuffer.transfer) {
+    ArrayBuffer.transfer = function(oldbuf, newlen) {
+      return oldbuf.slice(0, newlen);
+    };
+  }
+
   if (exports.fuzzer_test_one_input === null) {
     throw "ERROR: fuzzer_test_one_input not set! Cannot start the fuzzing loop!";
   }
@@ -162,4 +168,3 @@ rpc.exports.loop = function () {
   exports.fuzzing_loop();
 
 }
-
