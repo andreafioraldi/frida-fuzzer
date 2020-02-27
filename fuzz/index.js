@@ -70,29 +70,42 @@ function normalize_dict () {
 
 exports.fuzzing_loop = function () {
 
-  if (!ArrayBuffer.transfer) {
-    ArrayBuffer.transfer = function(oldbuf, newlen) {
-      return oldbuf.slice(0, newlen);
-    };
-  }
-
   if (exports.fuzzer_test_one_input === null) {
     throw "ERROR: fuzzer_test_one_input not set! Cannot start the fuzzing loop!";
   }
 
   var payload = null; // Uint8Array
 
-  function runner(/* ArrayBuffer */ arr_buf) {
+  if (ArrayBuffer.transfer === undefined) {
   
-    if (arr_buf.byteLength > config.MAX_FILE)
-      payload = new Uint8Array(arr_buf.transfer(arr_buf, config.MAX_FILE));
-    else
-      payload = new Uint8Array(arr_buf);
+    var runner = function(/* ArrayBuffer */ arr_buf) {
     
-    // console.log(payload)
+      if (arr_buf.byteLength > config.MAX_FILE)
+        payload = new Uint8Array(arr_buf.slice(0, config.MAX_FILE));
+      else
+        payload = new Uint8Array(arr_buf);
+      
+      // console.log(payload)
 
-    exports.fuzzer_test_one_input(payload);
+      exports.fuzzer_test_one_input(payload);
 
+    }
+  
+  } else {
+  
+    var runner = function(/* ArrayBuffer */ arr_buf) {
+  
+      if (arr_buf.byteLength > config.MAX_FILE)
+        payload = new Uint8Array(arr_buf.transfer(arr_buf, config.MAX_FILE));
+      else
+        payload = new Uint8Array(arr_buf);
+      
+      // console.log(payload)
+
+      exports.fuzzer_test_one_input(payload);
+
+    }
+  
   }
   
   normalize_dict();
