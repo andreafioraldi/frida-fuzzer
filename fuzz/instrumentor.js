@@ -52,6 +52,14 @@ exports.start_tracing = function(thread_id, target_module) {
       }
 
     });
+  } else {
+    maps.forEach(function(m) {
+
+      if (m.name.startsWith("libc.") || m.name.startsWith("libSystem.") || m.name.startsWith("frida")) {
+        Stalker.exclude(m);
+      }
+
+    });
   }
 
   var prev_loc_ptr = exports.prev_loc_map[thread_id];
