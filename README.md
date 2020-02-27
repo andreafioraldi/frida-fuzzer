@@ -1,6 +1,6 @@
 # Frida API Fuzzer
 
-> v1.3 Copyright (C) 2020 Andrea Fioraldi <andreafioraldi@gmail.com>
+> v1.4 Copyright (C) 2020 Andrea Fioraldi <andreafioraldi@gmail.com>
 > 
 > Released under the Apache License v2.0
 

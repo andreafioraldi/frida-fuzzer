@@ -17,11 +17,12 @@
  */
 
 //exports.MAP_SIZE = 65536; // 2^16, AFL default
-exports.MAP_SIZE = 16384; // 2^14, small APIs doesn't require a large map
+exports.MAP_SIZE = 32768; // 2^15, small APIs doesn't require a large map
+//exports.MAP_SIZE = 16384; // 2^14, small APIs doesn't require a large map
 
 exports.MAX_FILE = 1024*6;
 // after timeout abort fuzzing
-exports.TIMEOUT = 1000; // 1 seconds
+exports.TIMEOUT = 10*1000; // 10 seconds
 
 exports.HAVOC_STACK_POW2 = 7;
 
