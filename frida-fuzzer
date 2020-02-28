@@ -267,7 +267,7 @@ def status_screen(status):
     #pprint ("speed", "%d (%d) exec/s" % (int(eps), int(eps_total)))
     pprint ("speed", "%d exec/s" % int(eps))
     pprint ("uptime", readable_time(cur_ms - start_time))
-    pprint ("last path", readable_time(last_path - start_time))
+    pprint ("last path", readable_time(cur_ms - last_path))
     pprint ("map density", "{0:.2f} %".format(status["map_rate"]))
     pprint ("current", status["cur"] if status["cur"] != -1 else "<init>")
     pprint ("queue size", queue.max_num -1)
