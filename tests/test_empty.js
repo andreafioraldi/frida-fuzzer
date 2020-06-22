@@ -1,11 +1,12 @@
 var config = require("../fuzz/config.js");
 
 // if you want to modify config vars you need to do it before including the fuzz module
-config.MAP_SIZE = 128;
+config.MAP_SIZE = 16;
+config.SKIP_SCORE_FAV = true;
 
 var fuzz = require("../fuzz");
 
-var TARGET_MODULE = "test_linux64";
+var TARGET_MODULE = "test_empty";
 var TARGET_FUNCTION = DebugSymbol.fromName("target_func").address;;
 var RET_TYPE = "void";
 var ARGS_TYPES = ['pointer', 'int'];

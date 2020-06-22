@@ -131,6 +131,7 @@ exports.cur = null;
 exports.cur_idx = -1;
 
 exports.pending_favored = 0;
+exports.favoreds = 0;
 
 exports.size = function () {
 
@@ -163,6 +164,7 @@ exports.next = function () {
       "cur": exports.cur_idx,
       "total_execs": stages.total_execs,
       "pending_fav": exports.pending_favored,
+      "favs": exports.favoreds,
       "map_rate": bitmap.map_rate,
     });
     
@@ -288,6 +290,7 @@ exports.add = function (/* ArrayBuffer */ buf, exec_ms, has_new_cov) {
     "cur": exports.cur_idx,
     "total_execs": stages.total_execs,
     "pending_fav": exports.pending_favored,
+    "favs": queue.favoreds,
     "map_rate": bitmap.map_rate,
   }, buf);
 
@@ -318,6 +321,7 @@ exports.splice_target = function (buf) {
       "cur": exports.cur_idx,
       "total_execs": stages.total_execs,
       "pending_fav": exports.pending_favored,
+      "favs": queue.favoreds,
       "map_rate": bitmap.map_rate,
     });
     
@@ -365,6 +369,7 @@ exports.__cm = new CModule(`
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
+typedef uint64_t u64;
 
 struct __attribute__((packed)) QEntry {
 
@@ -378,9 +383,10 @@ struct __attribute__((packed)) QEntry {
 
 };
 
-u32 cull_body(struct QEntry** top_rated, u8* temp_v) {
+u64 cull_body(struct QEntry** top_rated, u8* temp_v) {
 
   u32 pending_favored = 0;
+  u32 favoreds = 0;
   
   u32 i;
   for (i = 0; i < (MAP_SIZE >> 3); ++i) {
@@ -403,17 +409,17 @@ u32 cull_body(struct QEntry** top_rated, u8* temp_v) {
           temp_v[j] &= ~top_rated[i]->trace_mini[j];
       }
 
-      if (!top_rated[i]->favored && !top_rated[i]->was_fuzzed)
+      if (!top_rated[i]->was_fuzzed)
         pending_favored++;
 
       top_rated[i]->favored = 1;
-      // favored++;
+      favoreds++;
 
     }
 
   }
 
-  return pending_favored;
+  return (pending_favored << 32) | favoreds;
 
 }
 
@@ -434,7 +440,9 @@ exports.cull = function () {
   for (var i = 0; i < queue.length; ++i)
     queue[i].favored = 0;
 
-  exports.pending_favored = cull_body(bitmap.top_rated, temp_v);
+  var r = cull_body(bitmap.top_rated, temp_v);
+  exports.favoreds = r & 0xffffffff;
+  exports.pending_favored = (r >> 32) & 0xffffffff;
 
 }
 

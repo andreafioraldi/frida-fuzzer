@@ -1,3 +1,8 @@
+var config = require("../fuzz/config.js");
+
+// if you want to modify config vars you need to do it before including the fuzz module
+config.MAP_SIZE = 128;
+
 var fuzz = require("../fuzz");
 
 var TARGET_MODULE = "libnative-lib.so";

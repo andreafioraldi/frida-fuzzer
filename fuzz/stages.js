@@ -52,6 +52,7 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
         "cur": queue.cur_idx,
         "total_execs": exports.total_execs,
         "pending_fav": queue.pending_favored,
+        "favs": queue.favoreds,
         "map_rate": bitmap.map_rate,
       }, buf);
     } else if (err.$handle != undefined) {
@@ -62,6 +63,7 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
         "cur": queue.cur_idx,
         "total_execs": exports.total_execs,
         "pending_fav": queue.pending_favored,
+        "favs": queue.favoreds,
         "map_rate": bitmap.map_rate,
       }, buf);
     }
@@ -79,6 +81,7 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
       "cur": queue.cur_idx,
       "total_execs": exports.total_execs,
       "pending_fav": queue.pending_favored,
+      "favs": queue.favoreds,
       "map_rate": bitmap.map_rate,
     }, buf);
     throw "timeout";
@@ -99,6 +102,7 @@ function common_fuzz_stuff(/* ArrayBuffer */ buf, callback) {
         "cur": queue.cur_idx,
         "total_execs": exports.total_execs,
         "pending_fav": queue.pending_favored,
+        "favs": queue.favoreds,
         "map_rate": bitmap.map_rate,
       });
     }
@@ -124,6 +128,7 @@ exports.dry_run = function (callback) {
       "cur": queue.cur_idx,
       "total_execs": exports.total_execs,
       "pending_fav": queue.pending_favored,
+      "favs": queue.favoreds,
       "map_rate": bitmap.map_rate,
     });
 
@@ -155,6 +160,7 @@ exports.dry_run = function (callback) {
     "cur": queue.cur_idx,
     "total_execs": exports.total_execs,
     "pending_fav": queue.pending_favored,
+    "favs": queue.favoreds,
     "map_rate": bitmap.map_rate,
   });
 

@@ -270,7 +270,8 @@ def status_screen(status):
     pprint ("last path", readable_time(cur_ms - last_path))
     pprint ("map density", "{0:.2f} %".format(status["map_rate"]))
     pprint ("current", status["cur"] if status["cur"] != -1 else "<init>")
-    pprint ("queue size", queue.max_num -1)
+    pprint ("queue size", queue.max_num +1)
+    pprint ("favoreds", status["favs"])
     pprint ("pending fav", status["pending_fav"])
     pprint ("last stage", status["stage"])
     pprint ("output path", output_folder)
@@ -444,7 +445,7 @@ def on_message(message, data):
     elif msg["event"] == "exception":
         on_stats(msg, data)
         on_exception(msg, data)
-    elif msg["event"] == "stats":
+    elif msg["event"] in ("stats", "status"):
         on_stats(msg, data)
 
 script.on('message', on_message)

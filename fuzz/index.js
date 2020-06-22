@@ -118,6 +118,7 @@ exports.fuzzing_loop = function () {
       "cur": queue.cur_idx,
       "total_execs": stages.total_execs,
       "pending_fav": queue.pending_favored,
+      "favs": queue.favoreds,
       "map_rate": bitmap.map_rate,
     }, payload);
     return false;
